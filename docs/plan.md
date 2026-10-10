@@ -141,6 +141,15 @@ Written 2026-10-10, before any step 2 training results.
   card on depth-4 and depth-8 runs likely to be excluded.
 - **Probes queued.** Depth 4 and depth 8 at width 512, seed 0, with the same
   hyperparameters. Width 512 grokked fastest at depth 2.
+- **2026-10-11, depth 2 analysed.** Results in `e02_deep_mlp.md`:
+  - H1a fails.
+  - H1b passes but does not discriminate.
+  - H2 fails; its observable turns out to be quantised.
+  - H3-rank passes as a weak test.
+  - H3-abs fails.
+  
+  Before the depth arm runs, H2's observable will be replaced, and the
+  replacement recorded here.
 - **If the probes fail:** the depth arm needs different hyperparameters. Any
   change will be chosen on accuracy curves only, before analysing those graphs,
   and recorded here.
