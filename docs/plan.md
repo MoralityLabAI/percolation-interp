@@ -128,6 +128,23 @@ Written 2026-10-10, before any step 2 training results.
    accuracy at step 18.3k of 20k. That is too close to the end, and deeper
    networks are likely slower. The decision used the training curve only.
 
+### Status log
+
+- **2026-10-11, depth 2 complete.** All 9 depth-2 runs grokked (widths 128, 256
+  and 512; 3 seeds each). Steps to 95% test accuracy ranged from 10.4k to 36.4k.
+- **Depth 4 stopped.** Depth 4, width 128, seed 0 did not grok in 40k steps:
+  - final test accuracy 0.008;
+  - test loss rose to about 87;
+  - weight norm flat at about 43, with recurring loss spikes.
+  
+  I stopped the grid there rather than spend about 2 GPU-hours on a shared
+  card on depth-4 and depth-8 runs likely to be excluded.
+- **Probes queued.** Depth 4 and depth 8 at width 512, seed 0, with the same
+  hyperparameters. Width 512 grokked fastest at depth 2.
+- **If the probes fail:** the depth arm needs different hyperparameters. Any
+  change will be chosen on accuracy curves only, before analysing those graphs,
+  and recorded here.
+
 ### Setup
 
 - **Task and training.** P = 113, one-hot (a, b) input, D hidden ReLU layers of

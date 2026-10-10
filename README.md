@@ -10,6 +10,7 @@ three questions:
 - `docs/plan.md`: the research plan, with predictions written before running
 - `docs/literature.md`: prior-art check (October 2026)
 - `docs/e01_controls.md`: step 1 results (control pipeline)
+- `docs/e02_deep_mlp.md`: step 2 results so far (grokking in deep MLPs; depth 2 done)
 
 ## Setup
 
