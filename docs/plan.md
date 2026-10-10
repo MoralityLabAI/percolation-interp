@@ -150,6 +150,13 @@ Written 2026-10-10, before any step 2 training results.
   
   Before the depth arm runs, H2's observable will be replaced, and the
   replacement recorded here.
+- **2026-10-11, probes failed.** Neither run grokked in 40k steps:
+  - depth 4, width 512: memorised by step 133, final test accuracy 0.008;
+  - depth 8, width 512: train accuracy kept collapsing and recovering
+    (0.15 to 1.0), final test accuracy 0.008.
+  
+  Under the pre-registered hyperparameters only depth 2 groks. The depth
+  arm is on hold pending a decision on GPU time.
 - **If the probes fail:** the depth arm needs different hyperparameters. Any
   change will be chosen on accuracy curves only, before analysing those graphs,
   and recorded here.

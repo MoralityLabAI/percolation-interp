@@ -5,8 +5,10 @@
   grokked.
 - **Depth 4:** the one run trained (width 128) memorised but did not grok in 40k
   steps.
-- **Depth 4 and 8 probes:** width 512 runs are queued on the GPU behind other
-  jobs.
+- **Depth 4 and 8 probes:** width-512 runs at both depths also failed to
+  grok (final test accuracy 0.008). Depth 8 was unstable: train accuracy kept
+  collapsing and recovering. Under the pre-registered hyperparameters, only
+  depth 2 groks.
 
 The depth sweep, and every claim that needs it, is still open.
 
