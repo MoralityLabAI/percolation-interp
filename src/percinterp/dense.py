@@ -12,33 +12,54 @@ from __future__ import annotations
 import torch
 
 
-def rank_entry(scores: list[torch.Tensor]) -> list[torch.Tensor]:
-    """Per graph and per layer: fraction of the layer's nonzero edges scoring >= this one.
+def _ranks(S: torch.Tensor) -> torch.Tensor:
+    """1-based descending rank of each edge within its layer, per graph (zeros rank last)."""
+    B = S.shape[0]
+    flat = S.reshape(B, -1)
+    order = torch.argsort(flat, dim=1, descending=True, stable=True)
+    ranks = torch.empty_like(order)
+    ranks.scatter_(1, order, torch.arange(flat.shape[1], device=S.device).expand(B, -1).contiguous())
+    return (ranks + 1).to(torch.float32).reshape(S.shape)
 
-    Zero scores are not edges (+inf). Matches measure.rank_entry with one group
-    per layer, on the skeleton of nonzero edges.
+
+def _scale(S: torch.Tensor, unit: str) -> torch.Tensor:
+    """(B, 1, 1) divisor turning ranks into occupation units.
+
+    "fraction": nonzero edges in the layer, so keys are the kept fraction p.
+    "degree":   live source nodes (any nonzero out-edge), so keys are c, the mean
+                kept out-degree per live source. Comparable across layers of
+                different widths; equal to pN for complete N -> N layers.
     """
-    out = []
-    for S in scores:
-        B = S.shape[0]
-        flat = S.reshape(B, -1)
-        nz = flat > 0
-        order = torch.argsort(flat, dim=1, descending=True, stable=True)
-        ranks = torch.empty_like(order)
-        ranks.scatter_(1, order, torch.arange(flat.shape[1], device=S.device).expand(B, -1).contiguous())
-        q = (ranks + 1).to(torch.float32) / nz.sum(1, keepdim=True).clamp(min=1)
-        out.append(torch.where(nz, q, torch.full_like(q, torch.inf)).reshape(S.shape))
-    return out
+    nz = S > 0
+    if unit == "fraction":
+        n = nz.flatten(1).sum(1)
+    elif unit == "degree":
+        n = nz.any(dim=1).sum(1)
+    else:
+        raise ValueError(f"unknown unit {unit!r}")
+    return n.clamp(min=1).to(torch.float32)[:, None, None]
 
 
-def shuffled_entry(scores: list[torch.Tensor], generator: torch.Generator | None = None) -> list[torch.Tensor]:
+def rank_entry(scores: list[torch.Tensor], unit: str = "fraction") -> list[torch.Tensor]:
+    """Keys from per-layer ranks: edge kept at occupation t when key <= t; zeros are not edges.
+
+    With unit="fraction" this matches measure.rank_entry with one group per
+    layer, on the skeleton of nonzero edges.
+    """
+    return [torch.where(S > 0, _ranks(S) / _scale(S, unit), torch.inf) for S in scores]
+
+
+def shuffled_entry(scores: list[torch.Tensor], generator: torch.Generator | None = None,
+                   unit: str = "fraction") -> list[torch.Tensor]:
     """The within-layer shuffle null: a uniformly random ranking of each layer's nonzero edges.
 
     The generator, if given, must live on the same device as the scores.
     """
-    return rank_entry(
-        [torch.rand(S.shape, device=S.device, generator=generator) * (S > 0) for S in scores]
-    )
+    out = []
+    for S in scores:
+        u = torch.rand(S.shape, device=S.device, generator=generator) * (S > 0)
+        out.append(torch.where(S > 0, _ranks(u) / _scale(S, unit), torch.inf))
+    return out
 
 
 def _frac_le(values: torch.Tensor, ps: torch.Tensor) -> torch.Tensor:
@@ -48,18 +69,22 @@ def _frac_le(values: torch.Tensor, ps: torch.Tensor) -> torch.Tensor:
     return counts.to(torch.float32) / values.shape[1]
 
 
-def reference_entry(scores: list[torch.Tensor], ref: list[torch.Tensor]) -> list[torch.Tensor]:
+def reference_entry(scores: list[torch.Tensor], ref: list[torch.Tensor],
+                    ref_scale: list[float] | None = None) -> list[torch.Tensor]:
     """Absolute-threshold keys: per layer, the fraction of reference scores >= this score.
 
     ref[l] is a 1-D tensor of reference scores for layer l (e.g. pooled from the
-    final checkpoint). A fixed key threshold is then a fixed absolute score
-    threshold per layer, comparable across checkpoints.
+    final checkpoint), so a fixed key is a fixed absolute score threshold per
+    layer, comparable across checkpoints. ref_scale[l] multiplies the fraction:
+    pass the reference's mean nonzero edges per live source for degree units.
     """
     out = []
-    for S, r in zip(scores, ref):
+    for l, (S, r) in enumerate(zip(scores, ref)):
         r = torch.sort(r.flatten())[0]
         n_ge = len(r) - torch.searchsorted(r, S.contiguous(), right=False)
         q = n_ge.to(torch.float32) / len(r)
+        if ref_scale is not None:
+            q = q * ref_scale[l]
         out.append(torch.where(S > 0, q, torch.full_like(q, torch.inf)))
     return out
 
@@ -73,25 +98,35 @@ def forward_entry(E: list[torch.Tensor]) -> list[torch.Tensor]:
     return F
 
 
-def backward_entry(E: list[torch.Tensor]) -> list[torch.Tensor]:
-    """B per node layer: smallest p at which the node reaches the last layer (all sinks)."""
-    Bsz = E[-1].shape[0]
-    Bk = [torch.full((Bsz, E[-1].shape[1]), -torch.inf, device=E[-1].device)]
+def backward_entry(E: list[torch.Tensor], sinks: torch.Tensor | None = None) -> list[torch.Tensor]:
+    """B per node layer: smallest p at which the node reaches a sink.
+
+    sinks: (B, n_last) boolean, per graph; default every last-layer node.
+    """
+    Bsz, n_last = E[-1].shape[0], E[-1].shape[1]
+    if sinks is None:
+        sinks = torch.ones(Bsz, n_last, dtype=torch.bool, device=E[-1].device)
+    Bk = [torch.where(sinks, -torch.inf, torch.inf).to(E[-1].dtype)]
     for El in reversed(E):
         Bk.append(torch.maximum(El, Bk[-1][:, :, None]).amin(dim=1))
     return Bk[::-1]
 
 
 class DenseProfile:
-    def __init__(self, E: list[torch.Tensor]):
+    def __init__(self, E: list[torch.Tensor], sinks: torch.Tensor | None = None):
+        """sinks: (B, n_last) boolean per graph; default every last-layer node."""
         self.E = E
         self.F = forward_entry(E)
-        self.Bk = backward_entry(E)
+        self.Bk = backward_entry(E, sinks)
+        self.sinks = sinks
 
     @property
     def p_span(self) -> torch.Tensor:
         """(B,) smallest p with a source-to-sink path."""
-        return self.F[-1].amin(dim=1)
+        F = self.F[-1]
+        if self.sinks is not None:
+            F = torch.where(self.sinks, F, torch.full_like(F, torch.inf))
+        return F.amin(dim=1)
 
     def node_entry(self, layer: int) -> torch.Tensor:
         return torch.maximum(self.F[layer], self.Bk[layer])

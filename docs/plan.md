@@ -107,12 +107,32 @@ Written 2026-10-10, before any step 2 training results.
 - Deep MLPs grok the same task and give layered graphs where e01's machinery
   and theory apply. Depth becomes a sweep variable.
 
+### Revisions before any analysis of trained models (2026-10-10)
+
+1. **Graph.** The first version had 2P one-hot input units and P logit nodes
+   (with the answer's logit as the sink). A smoke run at initialisation showed
+   the ranked graph spanning with 1/23 of the edges its shuffle needed. The
+   cause is trivial structure, not anything the network computes:
+   - the 2 active input units score about P times the 2P − 2 inactive ones;
+   - edges into the answer logit score about P times the others.
+   
+   A within-layer shuffle destroys both. The graph is now: 2 token nodes (a and
+   b, each mean-ablated as a block) → D layers of N → one sink (the metric).
+2. **Occupation axis.** With a width-1 sink layer, ranking at the same kept
+   fraction p in every layer pinned the spanning point at p = 1/N for both graph
+   and shuffle. Occupation is now c, the mean kept out-degree per live source
+   node, per layer. This is e01's axis (c = pN for complete N → N layers), so the
+   mean-field threshold is c = 1. The reference occupation is c_ref = 2, which
+   replaces p_ref = 2/N below. "Nominal p" in H1b now means nominal c.
+3. **Steps.** 40k instead of 20k. On CPU, depth 2 width 128 reached 95% test
+   accuracy at step 18.3k of 20k. That is too close to the end, and deeper
+   networks are likely slower. The decision used the training curve only.
+
 ### Setup
 
 - **Task and training.** P = 113, one-hot (a, b) input, D hidden ReLU layers of
   width N, P logits. AdamW (lr 1e-3, weight decay 1.0, β2 0.98), full batch, 30%
-  of pairs for training, 20k steps. If runs have not grokked by 20k steps, the
-  step count is changed using training curves only.
+  of pairs for training, 40k steps (see revision 3).
 - **Grid.** D ∈ {2, 4, 8}, N ∈ {128, 256, 512}, seeds 0-2. Configurations that
   do not grok are reported as such and excluded from H1-H3.
 - **Graph per input.** 2P inputs → D layers of N → one output node.

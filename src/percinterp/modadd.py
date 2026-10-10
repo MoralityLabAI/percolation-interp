@@ -2,17 +2,24 @@
 
 Influence graph for one input (a, b) with answer c = a + b mod P:
 
-    layer 0      2P input units (one-hot a, one-hot b)
+    layer 0      2 token nodes, a and b
     layers 1..D  hidden ReLU neurons, width N
-    layer D+1    one output node: the whole logit vector, scored by
-                 metric = logit_c - mean(logits)
+    layer D+1    one sink: the task metric logit_c - mean(logits)
 
-Edges are mean-ablation edges. Edge (j -> i) carries W_ij * (h_j - mean h_j)
-into i's pre-activation, where the mean is the clean model's mean activation
-over all P^2 inputs. Removing an edge replaces h_j by its mean on that edge
-only, so masks interpolate between the full model (all ones) and the fully
-mean-ablated model (all zeros), and the same masked forward pass scores
-subgraph fidelity.
+Edges are mean-ablation edges. Token node a sends u_a = W[:, a-block] (x_a - 1/P),
+its embedding minus the mean embedding, into the first layer. Hidden edge
+(j -> i) carries W_ij * (h_j - mean h_j), where the mean is the clean model's
+mean activation over all P^2 inputs. Neuron j's edge to the sink is its whole
+write to the logits, W[:, j] * (h_j - mean h_j). Removing an edge replaces the
+source by its mean on that edge only, so masks interpolate between the full
+model (all ones) and the fully mean-ablated model (all zeros), and the same
+masked forward pass scores subgraph fidelity.
+
+Why token nodes rather than 2P one-hot units, and one sink rather than P
+logits: those finer graphs carry trivial structure (the two active units score
+~P times the 2P-2 inactive ones; edges into the answer logit ~P times the
+others) that a within-layer shuffle destroys, so the null would credit the
+input encoding and the metric's definition to the network.
 
 Edge scores follow EAP-IG: |dh_j * W_ij * gbar_i|, where gbar_i is
 d metric / d pre_i averaged over inputs interpolated from the mean input (uniform
@@ -178,10 +185,18 @@ def metric_direction(model: MLP, c: torch.Tensor) -> torch.Tensor:
     return d
 
 
+def token_contributions(model: MLP, x: torch.Tensor) -> torch.Tensor:
+    """(B, N, 2): what tokens a and b add to the first pre-activation, relative to the mean input."""
+    P, W0 = model.P, model.layers[0].weight
+    dx = x - 1.0 / P
+    return torch.stack([dx[:, :P] @ W0[:, :P].T, dx[:, P:] @ W0[:, P:].T], dim=2)
+
+
 def edge_scores(model: MLP, x: torch.Tensor, c: torch.Tensor, means: list[torch.Tensor], steps: int = 8):
     """EAP-IG edge scores, one (B, n_out, n_in) magnitude tensor per edge layer.
 
-    The last tensor has n_out = 1: the edge from hidden neuron j to the output node.
+    Shapes: (B, N, 2) from the token nodes, (B, N, N) between hidden layers,
+    (B, 1, N) from the last hidden layer to the sink.
     """
     hs = model.hidden(x)
     dh = [h - m for h, m in zip(hs, means)]
@@ -205,13 +220,12 @@ def edge_scores(model: MLP, x: torch.Tensor, c: torch.Tensor, means: list[torch.
             grads = torch.autograd.grad(metric, pres)
             for l in range(D):
                 gsum[l] += grads[l]
-    scores = []
-    for l in range(D):
+    scores = [(token_contributions(model, x) * (gsum[0] / steps)[:, :, None]).abs().detach()]
+    for l in range(1, D):
         g = gsum[l] / steps
         scores.append((g[:, :, None] * W[l][None, :, :] * dh[l][:, None, :]).abs().detach())
-    # output edges: neuron j's write W_out[:, j] * dh_j, read by the metric
-    out_read = mdir @ W[D]  # (B, N): d metric / d h_j
-    scores.append((out_read * dh[D]).abs()[:, None, :].detach())
+    # sink edges: neuron j writes W[:, j] dh_j into the logits; the metric reads it through mdir
+    scores.append(((mdir @ W[D]) * dh[D]).abs()[:, None, :].detach())
     return scores
 
 
@@ -219,18 +233,17 @@ def edge_scores(model: MLP, x: torch.Tensor, c: torch.Tensor, means: list[torch.
 def masked_logits(model: MLP, x: torch.Tensor, masks: list[torch.Tensor], means: list[torch.Tensor]):
     """Forward pass keeping edge (j -> i) where masks[l][b, i, j] = 1, mean-ablating it where 0.
 
-    masks[-1] has shape (B, 1, N): whether neuron j's write to the output is kept.
+    Mask shapes match edge_scores: (B, N, 2), (B, N, N)..., (B, 1, N).
     """
     D = len(model.layers) - 1
-    h = x
-    for l, lin in enumerate(model.layers):
-        dh = h - means[l]
-        if l < D:
-            z = lin(means[l].expand_as(h)) + torch.einsum("bij,ij,bj->bi", masks[l], lin.weight, dh)
-            h = F.relu(z)
-        else:
-            z = lin(means[l].expand_as(h)) + (masks[l][:, 0, :] * dh) @ lin.weight.T
-    return z
+    z = model.layers[0](means[0].expand_as(x)) + (masks[0] * token_contributions(model, x)).sum(2)
+    h = F.relu(z)
+    for l in range(1, D):
+        lin = model.layers[l]
+        z = lin(means[l].expand_as(h)) + torch.einsum("bij,ij,bj->bi", masks[l], lin.weight, h - means[l])
+        h = F.relu(z)
+    out = model.layers[D]
+    return out(means[D].expand_as(h)) + (masks[D][:, 0, :] * (h - means[D])) @ out.weight.T
 
 
 def fidelity(logits: torch.Tensor, c: torch.Tensor, full_metric: torch.Tensor, ablated_metric: torch.Tensor):

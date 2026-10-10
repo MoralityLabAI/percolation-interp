@@ -70,8 +70,9 @@ def test_masked_forward_endpoints():
     a, b, c = all_pairs(P)
     x = one_hot_pairs(a, b, P).double()
     means = [t.double() for t in mean_activations(m, P)]
-    ones = [torch.ones(len(x), lin.weight.shape[0] if l < 2 else 1, lin.weight.shape[1], dtype=torch.float64)
-            for l, lin in enumerate(m.layers)]
+    shapes = [s.shape[1:] for s in edge_scores(m, x[:1], c[:1], means, steps=1)]
+    assert shapes == [(16, 2), (16, 16), (1, 16)]
+    ones = [torch.ones(len(x), *s, dtype=torch.float64) for s in shapes]
     assert torch.allclose(masked_logits(m, x, ones, means), m(x))
     zeros = [torch.zeros_like(t) for t in ones]
     out = masked_logits(m, x, zeros, means)
@@ -87,7 +88,7 @@ def test_eap_scores_match_finite_differences():
     c = c[idx]
     means = [t.double() for t in mean_activations(m, P)]
     scores = edge_scores(m, x, c, means, steps=1)
-    shapes = [(lin.weight.shape[0] if l < 2 else 1, lin.weight.shape[1]) for l, lin in enumerate(m.layers)]
+    shapes = [tuple(t.shape[1:]) for t in scores]
     ones = [torch.ones(len(x), *s, dtype=torch.float64) for s in shapes]
     mdir = metric_direction(m, c).double()
 
@@ -104,3 +105,37 @@ def test_eap_scores_match_finite_differences():
             masks[l][:, i, j] = 1 - eps
             fd = ((base - metric(masks)) / eps).abs()
             assert torch.allclose(scores[l][:, i, j].double(), fd, rtol=1e-4, atol=1e-8), (l, i, j)
+
+
+def test_dense_sinks_restrict_spanning_and_backbone():
+    rng = np.random.default_rng(5)
+    widths = [5, 6, 6, 4]
+    Ws = init_mlp(widths, rng)
+    mats = mlp_edge_matrices(Ws, rng.normal(size=5), kind="eap", readout=rng.normal(size=4))
+    E = dense.rank_entry([torch.tensor(m, dtype=torch.float32)[None] for m in mats])
+    for sink in range(4):
+        sinks = torch.zeros(1, 4, dtype=torch.bool)
+        sinks[0, sink] = True
+        g = LayeredDAG.from_dense(mats)
+        mask = np.zeros(g.n_nodes, dtype=bool)
+        mask[g.layer_nodes(3).start + sink] = True
+        g.sinks = mask
+        prof = profile(g, rank_entry(g.weight, g.edge_layer()))
+        dp = dense.DenseProfile(E, sinks)
+        assert np.isclose(dp.p_span.item(), prof.p_span, atol=1e-6)
+        for l in range(4):
+            assert np.allclose(dp.node_entry(l)[0].numpy(), prof.node_entry[g.layer_nodes(l)], atol=1e-6)
+
+
+def test_degree_units():
+    torch.manual_seed(0)
+    S = torch.rand(2, 6, 5)
+    S[1, :, 4] = 0.0  # graph 1: source 4 is dead
+    E = dense.rank_entry([S], unit="degree")[0]
+    for c in [0.4, 1.0, 2.2]:
+        kept = (E <= c).flatten(1).sum(1)
+        assert kept[0].item() == int(c * 5)
+        assert kept[1].item() == int(c * 4)
+    Es = dense.shuffled_entry([S], unit="degree")[0]
+    assert torch.equal(torch.isfinite(Es), S > 0)
+    assert (Es <= 1.0).flatten(1).sum(1).tolist() == [5, 4]
