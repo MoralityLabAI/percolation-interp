@@ -85,22 +85,92 @@ curve at every p.
 
 1. **Control pipeline.** Done: e01, `docs/e01_controls.md`. The code recovers
    exact answers, and init effects are measured.
-2. **Modular addition with grokking** (next).
-   - Setup: Nanda et al.'s one-layer setup, p = 113.
-   - Grain: inputs → attention heads → MLP neurons → logits.
-   - Edges: EAP-IG per input pair; all p² pairs form the ensemble.
-   - Checkpoints across memorisation, formation and cleanup.
-   - Seeds and several widths of d_mlp. Run H1-H3 against the predictions
-     above.
-   - Depth is about 3 node layers, so use undirected and backbone observables
-     there, not directed-percolation scaling.
-   - Needs torch: the RTX 5080 laptop GPU is enough.
-3. **Depth sweep (optional).** Only if a directed-percolation claim is wanted:
-   deep MLPs or a multi-layer transformer on a compositional task. Here A1's
-   ln N / L control applies.
+2. **Modular addition with grokking, in deep MLPs** (in progress; design
+   below). This merges the old depth-sweep step into step 2.
+3. **Nanda's one-layer transformer.** A check of H1's frequency-module
+   prediction only (see the step 2 design for why it is not the main testbed).
 4. **Language model.** GPT-2 small on IOI, Greater-Than and Docstring with
    EAP-IG (github.com/hannamw/EAP-IG). Compare against MIB's CPR/CMD curves,
    which are the overlap risk.
+
+## Step 2 design
+
+Written 2026-10-10, before any step 2 training results.
+
+### Why not Nanda's transformer as the main testbed
+
+- At head and neuron grain its influence graph is: 2 token inputs → 4 heads →
+  d_mlp neurons → 1 output.
+- Under the null, the fraction of neurons on the backbone is roughly
+  p(1 − (1 − p)^4). That is a smooth polynomial with no transition to find.
+- The spanning point is set by a single 2-3 edge path.
+- Deep MLPs grok the same task and give layered graphs where e01's machinery
+  and theory apply. Depth becomes a sweep variable.
+
+### Setup
+
+- **Task and training.** P = 113, one-hot (a, b) input, D hidden ReLU layers of
+  width N, P logits. AdamW (lr 1e-3, weight decay 1.0, β2 0.98), full batch, 30%
+  of pairs for training, 20k steps. If runs have not grokked by 20k steps, the
+  step count is changed using training curves only.
+- **Grid.** D ∈ {2, 4, 8}, N ∈ {128, 256, 512}, seeds 0-2. Configurations that
+  do not grok are reported as such and excluded from H1-H3.
+- **Graph per input.** 2P inputs → D layers of N → one output node.
+  - Edges: mean-ablation edges with EAP-IG scores (8 steps; `percinterp.modadd`).
+  - Ranking: within each layer; zero scores are not edges.
+- **Ensemble.** A fixed sample of 256 test-split inputs, at every checkpoint.
+- **Controls.**
+  - Within-layer shuffle on each input's own skeleton (`dense.shuffled_entry`).
+  - The step-0 checkpoint.
+  - Absolute thresholds: per layer, scores ranked against the final
+    checkpoint's pooled scores (`dense.reference_entry`).
+- **Reference occupation.** p_ref = 2/N, i.e. about 2 kept out-edges per
+  hidden node. That is above the mean-field threshold c = 1.
+- **Fidelity.** Logit-metric recovery (logit of the answer minus the mean
+  logit), accuracy and loss of the per-input kept subgraph, under mean
+  ablation.
+
+### Pass/fail criteria
+
+**H1a: dangling edges are inert.**
+- At the final checkpoint, keeping only the backbone's edges instead of every
+  kept edge changes mean recovery by less than 0.05.
+- **Fails if:** the change exceeds 0.05 at any p where recovery is between 0.2
+  and 0.9.
+
+**H1b: fidelity collapses on connectivity.**
+- Across grokked (D, N) configurations, take the point where mean recovery
+  crosses 0.5. Locate it on two axes: the backbone edge fraction (effective
+  sparsity) and nominal p.
+- The spread of that point is smaller on the backbone axis, measured as the
+  coefficient of variation across configurations.
+- **Fails if:** the coefficient of variation on the backbone axis is ≥ the one on
+  p.
+
+**H2: the init gap is not the whole story.**
+- For each grokked run, compute
+  Δ = log(median p*_final / median p*_final,shuf) − log(median p*_init / median p*_init,shuf).
+- Prediction: Δ < 0 (training lets the graph span with fewer edges than its
+  shuffle, relative to init).
+- **Fails if:** Δ ≥ 0 or |Δ| < the seed-to-seed standard deviation of Δ.
+
+**H3: connectivity over training.**
+- Definitions:
+  - t_mem: first step with train accuracy ≥ 0.99.
+  - t_grok: first step with test accuracy ≥ 0.95.
+  - Tracked quantity: backbone node fraction at p_ref over checkpoints, minus
+    the shuffled control's value (the "learned connectivity").
+- **H3-rank:** under rank thresholds, the steepest change (per log-step)
+  falls between t_mem and 1.5 × t_grok.
+- **H3-abs:** under absolute thresholds, the curve after t_mem tracks the weight
+  norm (Spearman ρ > 0.8). That would mean absolute thresholds are dominated by
+  the Omnigrok norm confound.
+- **Reading the result:**
+  - H3-rank holds with its change concentrated at t_grok rather than spread
+    over (t_mem, t_grok): "connectivity event = cleanup seen through the
+    ranking".
+  - The change is spread over (t_mem, t_grok): connectivity tracks gradual
+    formation.
 
 ## Pitfalls
 
