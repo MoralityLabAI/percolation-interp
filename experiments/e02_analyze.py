@@ -195,24 +195,42 @@ def analyze(run_path: Path, device: str, n_inputs: int, ig_steps: int, budget: f
     return result
 
 
+def finished_runs(path: Path) -> list[Path]:
+    """Checkpoint files whose training finished (the .json is written after the .pt)."""
+    if path.is_dir():
+        return sorted(p for p in path.glob("*.pt") if p.with_suffix(".json").exists())
+    return [path]
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("runs", type=Path, nargs="+")
+    ap.add_argument("runs", type=Path, nargs="+", help="checkpoint files or run directories")
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     ap.add_argument("--n-inputs", type=int, default=256)
     ap.add_argument("--ig-steps", type=int, default=8)
     ap.add_argument("--budget", type=float, default=2e7, help="edge elements per batch tensor")
     ap.add_argument("--max-ckpts", type=int, default=None)
+    ap.add_argument("--watch", type=int, default=0,
+                    help="keep polling the given directories until this many runs are analysed")
+    ap.add_argument("--timeout-hours", type=float, default=6.0)
     args = ap.parse_args()
-    for run in args.runs:
-        if (OUT / run.parent.name / f"{run.stem}.json").exists():
-            print(f"skip {run.stem}", flush=True)
-            continue
-        print(f"{run.stem}", flush=True)
-        r = analyze(run, args.device, args.n_inputs, args.ig_steps, args.budget, args.max_ckpts)
-        print(f"  done in {r['seconds']:.0f}s, peak cuda {r['peak_cuda_mib']:.0f} MiB", flush=True)
-        if args.device.startswith("cuda"):
-            torch.cuda.reset_peak_memory_stats()
+    deadline = time.time() + 3600 * args.timeout_hours
+    while True:
+        done = 0
+        for run in [r for p in args.runs for r in finished_runs(p)]:
+            if (OUT / run.parent.name / f"{run.stem}.json").exists():
+                done += 1
+                continue
+            print(f"{run.stem}", flush=True)
+            r = analyze(run, args.device, args.n_inputs, args.ig_steps, args.budget, args.max_ckpts)
+            print(f"  done in {r['seconds']:.0f}s, peak cuda {r['peak_cuda_mib']:.0f} MiB", flush=True)
+            if args.device.startswith("cuda"):
+                torch.cuda.reset_peak_memory_stats()
+            done += 1
+        if done >= args.watch or time.time() > deadline:
+            print(f"{done} runs analysed", flush=True)
+            break
+        time.sleep(30)
 
 
 if __name__ == "__main__":
