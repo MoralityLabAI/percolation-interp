@@ -59,7 +59,8 @@ features. Each gives a cross-layer attribution graph. The questions:
    - Each graph gets per-layer ranking in degree units (c), a within-layer
      shuffled control, and learned connectivity: the backbone node fraction
      minus the shuffled control's, across c.
-   - c* is the occupation where learned connectivity peaks.
+   - c* is the occupation where learned connectivity peaks (among significant
+     points; see P1).
    - The sieved structure is the backbone at c*.
 
 ## Predictions
@@ -67,9 +68,18 @@ features. Each gives a cross-layer attribution graph. The questions:
 The VPD graph and SAE graph are fixed before these are scored.
 
 **P1: both graphs carry learned connectivity.**
-- The maximum learned connectivity over c is above the 99th percentile of the
-  same quantity across 20 re-shuffles.
+- Statistic: the peak over c of learned connectivity's z-score against the
+  shuffles' spread at each c, with the spread floored at one node.
+- Pass: the graph's peak z exceeds every one of 100 shuffles' own peak z (each
+  shuffle measured against the other 99), i.e. p < 0.01.
 - Scored separately for the VPD graph and the SAE graph.
+- Revised before any e03 data existed. On a synthetic graph with planted
+  chains, the originally specified statistic (maximum raw learned connectivity
+  over 20 shuffles) was dominated by shuffle fluctuations near the percolation
+  transition and missed the planted structure. The z-score version found it
+  (z = 14.7 against shuffle peaks up to 7.8). `tests/test_sieve.py` covers both
+  the planted and the unstructured case.
+- c\* = the c of peak raw learned connectivity among points with z ≥ 3.
 
 **P2: cross-method agreement concentrates on the sieved structure.**
 - Statistic: for each VPD backbone component, its best co-firing PMI with any
