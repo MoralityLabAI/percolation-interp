@@ -34,9 +34,12 @@ features. Each gives a cross-layer attribution graph. The questions:
    - layer-1 MLP;
    - output.
 4. **SAE tower.**
-   - BatchTopK SAEs on the residual stream at three levels: after the
-     embedding, after block 0, and after block 1 (before the final norm).
-   - 1,024 latents each, k = 16.
+   - TopK SAEs on the residual stream at three levels: after the embedding,
+     after block 0, and after block 1 (before the final norm).
+   - 1,024 latents each, k = 16, with an auxiliary loss on dead latents.
+   - Per-token TopK, not BatchTopK (implementation decision, taken before any
+     SAE was trained): "a feature fires" is then exactly "it is in this
+     token's top k".
 5. **SAE graph.**
    - Feature-to-feature edges between levels, using the same construction as
      param-decomp's dataset attributions. For each target feature j, backpropagate
