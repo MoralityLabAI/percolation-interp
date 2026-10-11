@@ -71,9 +71,15 @@ def _z(x: np.ndarray, ref: np.ndarray, floor: float) -> np.ndarray:
 
 def sieve(g: LayeredDAG, weight: np.ndarray, groups: np.ndarray | None = None, cs: np.ndarray | None = None,
           n_shuffles: int = 100, rng: np.random.Generator | None = None,
-          nodes: np.ndarray | None = None, z_min: float = 3.0) -> SieveResult:
+          nodes: np.ndarray | None = None, z_min: float = 3.0,
+          null_groups: np.ndarray | None = None) -> SieveResult:
     """Run the sieve. `nodes` restricts the backbone fraction to a node subset (default: all
-    nodes that are neither sources nor sinks)."""
+    nodes that are neither sources nor sinks).
+
+    null_groups: labels within which the null permutes weights (default: the ranking groups,
+    i.e. within-layer shuffles). Pass g.src to keep every source node's out-strength
+    distribution (permute its out-edges among its targets), or g.dst for in-strength.
+    Ranking always uses `groups`."""
     rng = rng or np.random.default_rng(0)
     groups = g.edge_layer("dst") if groups is None else groups
     if nodes is None:
@@ -86,9 +92,10 @@ def sieve(g: LayeredDAG, weight: np.ndarray, groups: np.ndarray | None = None, c
     real = (ne[None, :] <= cs[:, None]).mean(1)
     shuffles = []
     live = np.asarray(weight) > 0
+    null_groups = groups if null_groups is None else np.asarray(null_groups)
     for _ in range(n_shuffles):
         w = np.zeros_like(np.asarray(weight, dtype=float))
-        w[live] = permute_within(np.asarray(weight, dtype=float)[live], groups[live], rng)
+        w[live] = permute_within(np.asarray(weight, dtype=float)[live], null_groups[live], rng)
         ps = profile(g, degree_entry(g, w, groups))
         shuffles.append((ps.node_entry[nodes][None, :] <= cs[:, None]).mean(1))
     shuffles = np.array(shuffles)
