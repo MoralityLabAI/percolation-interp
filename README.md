@@ -11,7 +11,8 @@ three questions:
 - `docs/literature.md`: prior-art check (October 2026)
 - `docs/e01_controls.md`: step 1 results (control pipeline)
 - `docs/e02_deep_mlp.md`: step 2 results so far (grokking in deep MLPs; depth 2 done)
-- `docs/e03_design.md`: e03, the percolation sieve over a full VPD and an SAE tower (in progress)
+- `docs/e03_design.md`: e03 design, the percolation sieve over a full VPD and an SAE tower
+- `docs/e03_results.md`: e03 results (P1 passes for VPD and fails for the SAE graph; P2 fails; P3 passes)
 
 ## Install
 

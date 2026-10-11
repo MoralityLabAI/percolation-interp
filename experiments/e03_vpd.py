@@ -81,7 +81,7 @@ def cmd_attributions(args):
     cfg = {"wandb_path": _run_id(), "n_batches": args.n_batches, "batch_size": args.batch_size,
            "ci_threshold": args.ci_threshold}
     harvest = (OUT / "harvest_subrun.txt").read_text().strip()
-    subrun = "da-e03"
+    subrun = args.subrun
     worker = [sys.executable, "-u", "-m", "param_decomp.dataset_attributions.scripts.run_worker",
               "--wandb_path", _run_id(), "--config_json", json.dumps(cfg), "--harvest_subrun_id", harvest,
               "--rank", "0", "--world_size", "1", "--subrun_id", subrun]
@@ -104,6 +104,8 @@ def main():
         p.add_argument("--n-batches", type=int, default=2000)
         p.add_argument("--batch-size", type=int, default=16)
         p.add_argument("--ci-threshold", type=float, default=0.0)
+        if name == "attributions":
+            p.add_argument("--subrun", default="da-e03")
     args = ap.parse_args()
     {"target": cmd_target, "decompose": cmd_decompose, "register": cmd_register,
      "harvest": cmd_harvest, "attributions": cmd_attributions}[args.cmd](args)

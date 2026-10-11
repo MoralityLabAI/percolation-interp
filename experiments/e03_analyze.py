@@ -130,7 +130,7 @@ def best_match(score, comps, feats_by_comp):
 
 
 def enrichment(score, comp_backbone, comp_pool_by_layer, feat_backbone, feat_pool, feat_rate, allowed_levels,
-               n_draws=1000, rng=None):
+               n_draws=1000, rng=None, comp_rate=None, fix=None):
     """P2/P3 statistic for the backbone sets against size-, layer- and rate-matched random sets.
 
     comp_backbone: {layer key: [component idx]}; comp_pool_by_layer: {layer key: alive idx}.
@@ -144,22 +144,32 @@ def enrichment(score, comp_backbone, comp_pool_by_layer, feat_backbone, feat_poo
 
     comps = [c for v in comp_backbone.values() for c in v]
     obs = best_match(score, comps, feats_for(feat_backbone))
-    deciles = {lvl: np.quantile(feat_rate[pool], np.linspace(0, 1, 11)) for lvl, pool in feat_pool.items()}
+    def matcher(rate, pool):
+        pool = np.asarray(pool)
+        edges = np.quantile(rate[pool], np.linspace(0, 1, 11))
+        bins = np.clip(np.searchsorted(edges, rate[pool], side="right") - 1, 0, 9)
 
-    def rate_matched(lvl, chosen):
-        pool = np.asarray(feat_pool[lvl])
-        bins = np.clip(np.searchsorted(deciles[lvl], feat_rate[pool], side="right") - 1, 0, 9)
-        want = np.clip(np.searchsorted(deciles[lvl], feat_rate[np.asarray(chosen)], side="right") - 1, 0, 9)
-        out = []
-        for b in want:
-            cand = pool[bins == b]
-            out.append(rng.choice(cand))
-        return out
+        def draw(chosen):
+            want = np.clip(np.searchsorted(edges, rate[np.asarray(chosen)], side="right") - 1, 0, 9)
+            return [rng.choice(pool[bins == b]) for b in want]
+        return draw
+
+    feat_draw = {lvl: matcher(feat_rate, pool) for lvl, pool in feat_pool.items()}
+    comp_draw = ({key: matcher(comp_rate, pool) for key, pool in comp_pool_by_layer.items()}
+                 if comp_rate is not None else None)
 
     null = []
     for _ in range(n_draws):
-        rc = [c for key, v in comp_backbone.items() for c in rng.choice(comp_pool_by_layer[key], len(v), replace=False)]
-        rf = {lvl: rate_matched(lvl, v) for lvl, v in feat_backbone.items() if len(v)}
+        if fix == "components":
+            rc = comps
+        elif comp_draw is not None:
+            rc = [c for key, v in comp_backbone.items() for c in comp_draw[key](v)]
+        else:
+            rc = [c for key, v in comp_backbone.items() for c in rng.choice(comp_pool_by_layer[key], len(v), replace=False)]
+        if fix == "features":
+            rf = feat_backbone
+        else:
+            rf = {lvl: feat_draw[lvl](v) for lvl, v in feat_backbone.items() if len(v)}
         null.append(best_match(score, rc, feats_for(rf)))
     null = np.array(null)
     return {"observed": obs, "null_median": float(np.median(null)), "ratio": obs / float(np.median(null)),
@@ -197,7 +207,15 @@ def layer_of(module: str) -> int:
     return int(module.split(".")[1])
 
 
-def enrichment_tests(X, vpd_backbone_ids, sae_backbone_ids, comp_rate, n_draws, seed):
+def jaccard_matrix(X):
+    co, nc, nf = X["co"].numpy(), X["n_comp"].numpy(), X["n_feat"].numpy()
+    with np.errstate(divide="ignore", invalid="ignore"):
+        jac = co / (nc[:, None] + nf[None, :] - co)
+    jac[(co < MIN_CO) | ~np.isfinite(jac)] = np.nan
+    return jac
+
+
+def enrichment_tests(X, vpd_backbone_ids, sae_backbone_ids, comp_rate, n_draws, seed, variants=False):
     """P2 (co-firing PMI) and P3 (weight-space |cos|) for the sieved sets against matched random sets."""
     modules, off, foff = X["modules"], X["comp_offsets"], X["feat_offsets"]
     midx = {m: i for i, m in enumerate(modules)}
@@ -246,7 +264,25 @@ def enrichment_tests(X, vpd_backbone_ids, sae_backbone_ids, comp_rate, n_draws, 
                            n_draws=n_draws, rng=np.random.default_rng(seed))
     out["P3"] = enrichment(cos, comp_bb, comp_pool, feat_bb, feat_pool, feat_rate, levels_weight,
                            n_draws=n_draws, rng=np.random.default_rng(seed + 1))
-    for k in ("P2", "P3"):
+    if variants:
+        # exploratory, not pre-registered
+        crate = X["n_comp"].numpy() / X["tokens"]
+        kw = dict(n_draws=n_draws)
+        out["P2_rate_matched_components"] = enrichment(pmi, comp_bb, comp_pool, feat_bb, feat_pool, feat_rate,
+                                                       levels_cofire, rng=np.random.default_rng(seed + 2),
+                                                       comp_rate=crate, **kw)
+        out["P3_rate_matched_components"] = enrichment(cos, comp_bb, comp_pool, feat_bb, feat_pool, feat_rate,
+                                                       levels_weight, rng=np.random.default_rng(seed + 3),
+                                                       comp_rate=crate, **kw)
+        out["P2_jaccard"] = enrichment(jaccard_matrix(X), comp_bb, comp_pool, feat_bb, feat_pool, feat_rate,
+                                       levels_cofire, rng=np.random.default_rng(seed + 4), **kw)
+        out["P3_components_fixed"] = enrichment(cos, comp_bb, comp_pool, feat_bb, feat_pool, feat_rate,
+                                                levels_weight, rng=np.random.default_rng(seed + 5),
+                                                fix="components", **kw)
+        out["P3_features_fixed"] = enrichment(cos, comp_bb, comp_pool, feat_bb, feat_pool, feat_rate,
+                                              levels_weight, rng=np.random.default_rng(seed + 6),
+                                              comp_rate=crate, fix="features", **kw)
+    for k in [k for k in out if k.startswith("P")]:
         r = out[k]
         print(f"{k}: observed {r['observed']:.3f}, null median {r['null_median']:.3f}, "
               f"ratio {r['ratio']:.2f}, p {r['p_value']:.4f}", flush=True)
