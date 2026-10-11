@@ -225,6 +225,84 @@ Written 2026-10-10, before any step 2 training results.
   - The change is spread over (t_mem, t_grok): connectivity tracks gradual
     formation.
 
+## Depth arm
+
+Written 2026-10-11, before any search run.
+
+### Why a search
+
+Under the step 2 hyperparameters only depth 2 groks. Timing the depth-8 runs
+on CPU turned up a likely cause: PyTorch's default `nn.Linear` initialisation
+shrinks a ReLU network's signal variance about 6× per layer. Depth-8
+activations hit denormal floats, which took 0.6 s per step on CPU until
+denormals were flushed. So the search includes He (Kaiming) initialisation for
+ReLU.
+
+### Search
+
+Runs on Claude Code cloud sessions: CPU only, 4 vCPUs. One session per
+setting; each trains depth 4, then depth 8.
+
+- **Fixed:** width 128, seed 0, 40k steps. Everything else as in step 2 unless
+  the setting says otherwise.
+
+| Setting | Init | lr | Train fraction | Init scale | Depths |
+|---|---|---|---|---|---|
+| A (baseline) | torch | 1e-3 | 0.3 | 1 | 8 only (depth 4 already failed) |
+| B | kaiming | 1e-3 | 0.3 | 1 | 4, 8 |
+| C | kaiming | 3e-4 | 0.3 | 1 | 4, 8 |
+| D | kaiming | 1e-3 | 0.3 | 0.5 | 4, 8 |
+| E | torch | 1e-3 | 0.5 | 1 | 4, 8 |
+| F | kaiming | 1e-3 | 0.5 | 1 | 4, 8 |
+
+### Selection rule
+
+Uses accuracy only; no graph is analysed before the choice is made.
+
+- **Qualifying:** a setting qualifies if both depths reach 95% test accuracy
+  within 40k steps.
+- **Choice:** the qualifying setting with the smallest maximum t_grok across the
+  two depths. Ties go to the setting with fewer changes from step 2.
+- **If none qualifies:** report that, and do not run a depth grid.
+
+### Depth grid after selection
+
+- **Grid.** The chosen setting, width 128, depths 2, 4 and 8, seeds 0-2.
+- **Depth 2 is re-run** under the chosen setting, so every depth shares it.
+- **Width 256** is added only if CPU time allows.
+- **Analysis** as in step 2: 256 test inputs and 40 checkpoints.
+
+### Pass/fail criteria for the depth grid
+
+These replace or extend the step 2 criteria.
+
+**H1a** unchanged.
+
+**H1b**, stricter.
+- Depth 2 showed that plain kept fraction p (≈ c/N) collapses as well as the
+  backbone does.
+- Pass requires the coefficient of variation of the half-recovery point, across
+  all grokked (D, N) configurations, to be smaller on the backbone edge fraction
+  axis than on both nominal c and kept fraction p.
+
+**H2**, new observable.
+- The spanning point is quantised by the 2-node token layer.
+- Replacement: c_bb, the c at which the mean backbone node fraction over hidden
+  layers first reaches 0.25 (log-interpolated).
+- Δ' = log(c_bb,final / c_bb,final,shuf) − log(c_bb,init / c_bb,init,shuf).
+- Prediction: Δ' < 0.
+- **Fails if:** Δ' ≥ 0, or |mean Δ'| < seed-to-seed standard deviation.
+- Status by depth: confirmatory for depths 4 and 8; exploratory for depth 2,
+  whose data were seen before this definition.
+
+**H3-peak**, new.
+- This turns step 2's exploratory finding into a test.
+- Prediction: learned connectivity at c = 2 peaks between 0.5 and 1.0 ×
+  t_grok, then falls by at least 30% from that peak by the final checkpoint.
+- **Fails if:** either part fails in more than one-third of grokked runs.
+
+**H3-rank and H3-abs** unchanged.
+
 ## Pitfalls
 
 - **Sign.** Percolation ignores it, but circuits use inhibition and

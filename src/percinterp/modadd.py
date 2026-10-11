@@ -53,10 +53,24 @@ class Config:
     seed: int = 0
     n_log_ckpts: int = 40  # checkpoints log-spaced over training, plus step 0 and the last
     n_lin_ckpts: int = 40  # and evenly spaced ones
+    init_scale: float = 1.0  # multiplies every parameter after init (Omnigrok's alpha)
+    init: str = "torch"  # "torch": nn.Linear default; "kaiming": He normal for ReLU, zero biases
 
     @property
     def name(self) -> str:
-        return f"P{self.P}_D{self.depth}_N{self.width}_s{self.seed}"
+        """Run name; hyperparameters that differ from the step 2 defaults are appended."""
+        extra = ""
+        if self.lr != 1e-3:
+            extra += f"_lr{self.lr:g}"
+        if self.frac_train != 0.3:
+            extra += f"_f{self.frac_train:g}"
+        if self.weight_decay != 1.0:
+            extra += f"_wd{self.weight_decay:g}"
+        if self.init_scale != 1.0:
+            extra += f"_i{self.init_scale:g}"
+        if self.init != "torch":
+            extra += f"_{self.init}"
+        return f"P{self.P}_D{self.depth}_N{self.width}_s{self.seed}{extra}"
 
 
 class MLP(nn.Module):
@@ -109,15 +123,32 @@ def checkpoint_steps(cfg: Config) -> list[int]:
     return sorted(set([0] + log + lin))
 
 
-def train(cfg: Config, out_dir: Path, device: str = "cuda", log_every: int = 100) -> dict:
-    """Full-batch AdamW training. Saves every checkpoint's state dict into one file."""
+def train(cfg: Config, out_dir: Path, device: str = "cuda", log_every: int = 100, progress: int = 0) -> dict:
+    """Full-batch AdamW training. Saves every checkpoint's state dict into one file.
+
+    progress > 0 prints a status line every that many steps.
+    """
     torch.manual_seed(cfg.seed)
     out_dir.mkdir(parents=True, exist_ok=True)
     a, b, c = all_pairs(cfg.P, device)
     x = one_hot_pairs(a, b, cfg.P)
     tr, te = split(cfg.P, cfg.frac_train, cfg.seed)
     tr, te = tr.to(device), te.to(device)
+    if device == "cpu":
+        # tiny activations in deep nets otherwise hit denormal floats, which are very slow on CPU
+        torch.set_flush_denormal(True)
     model = MLP(cfg.P, cfg.depth, cfg.width).to(device)
+    with torch.no_grad():
+        if cfg.init == "kaiming":
+            # nn.Linear's default shrinks a ReLU net's signal variance about 6x per layer
+            for lin in model.layers:
+                nn.init.kaiming_normal_(lin.weight, nonlinearity="relu")
+                nn.init.zeros_(lin.bias)
+        elif cfg.init != "torch":
+            raise ValueError(f"unknown init {cfg.init!r}")
+        if cfg.init_scale != 1.0:
+            for p in model.parameters():
+                p.mul_(cfg.init_scale)
     opt = torch.optim.AdamW(
         model.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay, betas=(0.9, cfg.beta2)
     )
@@ -136,6 +167,9 @@ def train(cfg: Config, out_dir: Path, device: str = "cuda", log_every: int = 100
                     rec[f"{name}_acc"] = (logits[idx].argmax(-1) == c[idx]).float().mean().item()
                 rec["weight_norm"] = math.sqrt(sum((p**2).sum().item() for p in model.parameters()))
                 history.append(rec)
+                if progress and step % progress == 0:
+                    print(f"  {cfg.name} step {step}: train acc {rec['train_acc']:.3f}, test acc "
+                          f"{rec['test_acc']:.3f}, {time.time() - t0:.0f}s", flush=True)
         if step == cfg.steps:
             break
         loss = F.cross_entropy(model(x[tr]), c[tr])
