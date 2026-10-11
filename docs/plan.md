@@ -243,6 +243,9 @@ ReLU.
 Runs on Claude Code cloud sessions: CPU only, 4 vCPUs. One session per
 setting; each trains depth 4, then depth 8.
 
+- **Venue:** three cloud sessions, each running two settings, started from
+  the desktop app. The prompt is in `cloud/README.md`; the driver is
+  `experiments/e02_search.py`, which holds this table.
 - **Fixed:** width 128, seed 0, 40k steps. Everything else as in step 2 unless
   the setting says otherwise.
 
