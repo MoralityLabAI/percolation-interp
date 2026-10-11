@@ -2,11 +2,26 @@
 name = "percinterp"
 version = "0.1.0"
 description = "Percolation theory applied to mechanistic-interpretability influence graphs"
+readme = "README.md"
+authors = [{ name = "Patrick Dugan" }]
 requires-python = ">=3.11"
-dependencies = ["numpy>=1.25", "scipy>=1.11", "matplotlib>=3.8"]
+# Core (graph, measure, theory, controls, sieve) needs only numpy and scipy.
+dependencies = ["numpy>=1.25", "scipy>=1.11"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 
 [project.optional-dependencies]
-dev = ["pytest>=8"]
+# dense (batched GPU measurements), modadd (step 2 models), sae (TopK SAEs)
+torch = ["torch>=2.2"]
+# plotstyle, used by the experiment scripts' figures
+plot = ["matplotlib>=3.8"]
+dev = ["pytest>=8", "torch>=2.2", "matplotlib>=3.8"]
+
+[project.urls]
+Repository = "https://github.com/MoralityLabAI/percolation-interp"
 
 [build-system]
 requires = ["setuptools>=68"]

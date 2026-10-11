@@ -11,8 +11,40 @@ three questions:
 - `docs/literature.md`: prior-art check (October 2026)
 - `docs/e01_controls.md`: step 1 results (control pipeline)
 - `docs/e02_deep_mlp.md`: step 2 results so far (grokking in deep MLPs; depth 2 done)
+- `docs/e03_design.md`: e03, the percolation sieve over a full VPD and an SAE tower (in progress)
 
-## Setup
+## Install
+
+The package is `percinterp`. The core (`graph`, `measure`, `theory`, `controls`, `sieve`)
+needs only numpy and scipy:
+
+```bash
+pip install "git+https://github.com/MoralityLabAI/percolation-interp"
+```
+
+Optional extras:
+
+- `[torch]`: `dense`, `modadd` and `sae`
+- `[plot]`: figure style for the experiment scripts
+- `[dev]`: tests
+
+```bash
+pip install "percinterp[torch,plot] @ git+https://github.com/MoralityLabAI/percolation-interp"
+```
+
+Minimal use: rank a weighted layered graph's edges within layers, then sieve for
+connected structure against within-layer shuffles:
+
+```python
+from percinterp import LayeredDAG
+from percinterp.sieve import sieve
+
+g = LayeredDAG.from_dense([W0, W1])  # (out, in) weight or attribution matrices per layer
+res = sieve(g, g.weight)
+res.z_peak, res.p_value, res.backbone  # peak z, p against shuffles, sieved nodes
+```
+
+## Development setup
 
 ```bash
 python -m venv .venv
@@ -32,6 +64,10 @@ minute on CPU.
 | `measure.py` | entry keys (`rank_entry`), forward and backward min-max passes, `Profile` (spanning point, backbone, reachability at any p), undirected `components` |
 | `theory.py` | exact Markov chain for Bernoulli percolation on complete layered graphs, mean field, path-count threshold |
 | `controls.py` | complete layered graphs, within-group shuffles, MLP influence graphs (\|W\|, direct effect, EAP) |
+| `sieve.py` | the percolation sieve: degree-unit ranks, learned connectivity z-scored against shuffles (within-layer or strength-preserving), backbone at c* |
+| `dense.py` | batched torch versions of the measurements for adjacent-layer graphs (GPU) |
+| `modadd.py` | step 2: modular-addition MLPs, mean-ablation edges with EAP-IG scores, masked subgraph fidelity |
+| `sae.py` | TopK sparse autoencoders (with AuxK) for an SAE tower |
 | `plotstyle.py` | shared figure style |
 
 How the measurement works:
