@@ -41,9 +41,70 @@ def sae_graph(edge: str = "abs"):
     return g, g.weight, ids
 
 
-def vpd_graph():
-    """LayeredDAG over alive VPD components (built from param-decomp's dataset attributions)."""
-    raise NotImplementedError("filled in once the attribution file's layout has been inspected")
+CANON_TO_MODULE = {"attn.q": "attn.q_proj", "attn.k": "attn.k_proj", "attn.v": "attn.v_proj",
+                   "attn.o": "attn.o_proj", "mlp.up": "mlp.c_fc", "mlp.down": "mlp.down_proj"}
+STAGE = {"attn.q": 0, "attn.k": 0, "attn.v": 0, "attn.o": 1, "mlp.up": 2, "mlp.down": 3}
+
+
+def canon_to_module(key: str) -> str:
+    """'0.attn.q' -> 'h.0.attn.q_proj' (param-decomp's LlamaSimpleMLP path schema)."""
+    layer, rest = key.split(".", 1)
+    return f"h.{layer}.{CANON_TO_MODULE[rest]}"
+
+
+def attributions_path() -> Path:
+    run_id = (OUT / "vpd_run.txt").read_text().strip()
+    root = Path.home() / "param_decomp_out" / "dataset_attributions" / run_id
+    found = sorted(root.glob("da-*/dataset_attributions.pt"))
+    if not found:
+        raise SystemExit(f"no dataset_attributions.pt under {root}")
+    return found[-1]
+
+
+def vpd_graph(comp_rate: dict[str, np.ndarray]):
+    """LayeredDAG: embed tokens -> components (residual-stream order) -> output.
+
+    comp_rate: per module path, each component's firing rate (CI > threshold), from crossref.pt.
+    Alive components fire on >= MIN_RATE of tokens. Edges: |regular_attr_abs| between
+    components, |embed_attr_abs| from tokens seen in the data, and component -> output with the
+    norm of the component's effect in logit space (w_unembed @ unembed_attr).
+    Returns (g, weight, ids) with ids[i] = ("embed", token) | (module path, component) | ("output", 0).
+    """
+    A = torch.load(attributions_path(), weights_only=True)
+    layers = sorted({t for t in A["regular_attr_abs"]} | {t for t in A["embed_attr_abs"]},
+                    key=lambda k: (int(k.split(".")[0]), STAGE[k.split(".", 1)[1]], k))
+    alive = {k: np.flatnonzero(comp_rate[canon_to_module(k)] >= MIN_RATE) for k in layers}
+    tokens = np.flatnonzero(A["embed_token_count"].numpy() > 0)
+    blocks = [("embed", tokens)] + [(k, alive[k]) for k in layers] + [("output", np.array([0]))]
+    sizes = [len(ix) for _, ix in blocks]
+    offsets = np.concatenate([[0], np.cumsum(sizes)])
+    pos = {name: i for i, (name, _) in enumerate(blocks)}
+    src, dst, w = [], [], []
+
+    def add(tgt_name, src_name, M):
+        ti, si = pos[tgt_name], pos[src_name]
+        M = np.abs(M[np.ix_(blocks[ti][1], blocks[si][1])])
+        r, c = np.nonzero(M)
+        dst.append(r + offsets[ti])
+        src.append(c + offsets[si])
+        w.append(M[r, c])
+
+    for t in layers:
+        for s, M in A["regular_attr_abs"].get(t, {}).items():
+            if s in pos and pos[s] < pos[t]:
+                add(t, s, M.float().numpy())
+        if t in A["embed_attr_abs"]:
+            add(t, "embed", A["embed_attr_abs"][t].float().numpy())
+    W_U = A["w_unembed"].float()
+    for s, M in A["unembed_attr"].items():
+        if s in pos:
+            W = W_U if W_U.shape[1] == M.shape[0] else W_U.T  # orient as (vocab, d_model)
+            logit_effect = (W @ M.float()).norm(dim=0).numpy()  # (src_c,)
+            add("output", s, logit_effect[None, :])
+    g = LayeredDAG(sizes, np.concatenate(src), np.concatenate(dst), np.concatenate(w))
+    ids = [(name if name in ("embed", "output") else canon_to_module(name), int(i))
+           for name, ix in blocks for i in ix]
+    return g, g.weight, ids
 
 
 # --- cross-reference enrichment -------------------------------------------------------------
@@ -108,31 +169,111 @@ def enrichment(score, comp_backbone, comp_pool_by_layer, feat_backbone, feat_poo
 # --- main -------------------------------------------------------------------------------------
 
 
-def run_sieve(name, g, w, n_shuffles, seed):
-    res = sieve(g, w, n_shuffles=n_shuffles, rng=np.random.default_rng(seed))
+def run_sieve(name, g, w, n_shuffles, seed, **kw):
+    res = sieve(g, w, n_shuffles=n_shuffles, rng=np.random.default_rng(seed), **kw)
     print(f"{name}: z_peak {res.z_peak:.1f} (shuffle peaks max {res.null_peaks.max():.1f}), "
           f"p {res.p_value:.3f}, c* {res.c_star:.3g}, learned {res.peak:+.3f}, "
           f"backbone {int(res.backbone.sum())}/{g.n_nodes} nodes", flush=True)
     return res
 
 
+def sieve_record(res, ids, extra=None):
+    return {**(extra or {}), "z_peak": res.z_peak, "null_peaks": res.null_peaks.tolist(), "p": res.p_value,
+            "c_star": res.c_star, "learned_peak": res.peak,
+            "backbone": [ids[i] for i in np.flatnonzero(res.backbone)],
+            "cs": res.cs.tolist(), "real": res.real.tolist(), "shuffle_mean": res.shuffles.mean(0).tolist(),
+            "z": res.z.tolist()}
+
+
+def load_crossref():
+    X = torch.load(OUT / "crossref.pt", weights_only=False)
+    off = X["comp_offsets"]
+    rate = X["n_comp"].numpy() / X["tokens"]
+    comp_rate = {m: rate[off[i]:off[i + 1]] for i, m in enumerate(X["modules"])}
+    return X, comp_rate
+
+
+def layer_of(module: str) -> int:
+    return int(module.split(".")[1])
+
+
+def enrichment_tests(X, vpd_backbone_ids, sae_backbone_ids, comp_rate, n_draws, seed):
+    """P2 (co-firing PMI) and P3 (weight-space |cos|) for the sieved sets against matched random sets."""
+    modules, off, foff = X["modules"], X["comp_offsets"], X["feat_offsets"]
+    midx = {m: i for i, m in enumerate(modules)}
+    n_comp, n_feat = off[-1], foff[-1]
+    feat_rate = X["n_feat"].numpy() / X["tokens"]
+    comp_module = np.empty(n_comp, dtype=object)
+    for i, m in enumerate(modules):
+        comp_module[off[i]:off[i + 1]] = m
+
+    comp_bb, comp_pool = {}, {}
+    for m in modules:
+        comp_pool[m] = off[midx[m]] + np.flatnonzero(comp_rate[m] >= MIN_RATE)
+    for m, c in vpd_backbone_ids:
+        if m in midx:
+            comp_bb.setdefault(m, []).append(off[midx[m]] + c)
+    comp_pool = {m: comp_pool[m] for m in comp_bb}
+    feat_bb, feat_pool = {}, {}
+    for lvl in range(len(foff) - 1):
+        feat_pool[lvl] = foff[lvl] + np.flatnonzero(feat_rate[foff[lvl]:foff[lvl + 1]] >= MIN_RATE)
+    for lvl, i in sae_backbone_ids:
+        feat_bb.setdefault(lvl, []).append(foff[lvl] + i)
+
+    pmi = pmi_matrix(X)
+    cos = np.full((n_comp, n_feat), np.nan)
+    for m, M in X["cos_read"].items():
+        l = layer_of(m)
+        cos[off[midx[m]]:off[midx[m] + 1], foff[l]:foff[l + 1]] = np.abs(M.numpy())
+    for m, M in X["cos_write"].items():
+        l = layer_of(m) + 1
+        cos[off[midx[m]]:off[midx[m] + 1], foff[l]:foff[l + 1]] = np.abs(M.numpy())
+    is_write = np.array([m.endswith(("o_proj", "down_proj")) for m in comp_module])
+
+    def levels_cofire(c):
+        l = layer_of(comp_module[c])
+        return [l, l + 1]
+
+    def levels_weight(c):
+        l = layer_of(comp_module[c])
+        return [l + 1] if is_write[c] else [l]
+
+    out = {
+        "n_backbone_components": int(sum(len(v) for v in comp_bb.values())),
+        "n_backbone_features": int(sum(len(v) for v in feat_bb.values())),
+    }
+    out["P2"] = enrichment(pmi, comp_bb, comp_pool, feat_bb, feat_pool, feat_rate, levels_cofire,
+                           n_draws=n_draws, rng=np.random.default_rng(seed))
+    out["P3"] = enrichment(cos, comp_bb, comp_pool, feat_bb, feat_pool, feat_rate, levels_weight,
+                           n_draws=n_draws, rng=np.random.default_rng(seed + 1))
+    for k in ("P2", "P3"):
+        r = out[k]
+        print(f"{k}: observed {r['observed']:.3f}, null median {r['null_median']:.3f}, "
+              f"ratio {r['ratio']:.2f}, p {r['p_value']:.4f}", flush=True)
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--n-shuffles", type=int, default=100)
-    ap.add_argument("--only", choices=["sae", "vpd", "all"], default="all")
+    ap.add_argument("--n-draws", type=int, default=1000)
+    ap.add_argument("--only", choices=["sae", "all"], default="all")
     ap.add_argument("--sae-edge", choices=["abs", "signed"], default="abs")
     args = ap.parse_args()
     report = {}
-    if args.only in ("sae", "all"):
-        g, w, ids = sae_graph(args.sae_edge)
-        res = run_sieve(f"SAE graph ({args.sae_edge} edges)", g, w, args.n_shuffles, 0)
-        report["sae_sieve"] = {"edge": args.sae_edge, "z_peak": res.z_peak, "null_peaks": res.null_peaks.tolist(), "p": res.p_value,
-                               "c_star": res.c_star, "learned_peak": res.peak,
-                               "backbone": [ids[i] for i in np.flatnonzero(res.backbone)],
-                               "cs": res.cs.tolist(), "real": res.real.tolist(),
-                               "shuffle_mean": res.shuffles.mean(0).tolist(), "z": res.z.tolist()}
+    g, w, sae_ids = sae_graph(args.sae_edge)
+    sae_res = run_sieve(f"SAE graph ({args.sae_edge} edges)", g, w, args.n_shuffles, 0)
+    report["sae_sieve"] = sieve_record(sae_res, sae_ids, {"edge": args.sae_edge})
+    if args.only == "all":
+        X, comp_rate = load_crossref()
+        g, w, vpd_ids = vpd_graph(comp_rate)
+        vpd_res = run_sieve("VPD graph", g, w, args.n_shuffles, 1)
+        report["vpd_sieve"] = sieve_record(vpd_res, vpd_ids)
+        vpd_bb = [i for i in report["vpd_sieve"]["backbone"] if i[0] not in ("embed", "output")]
+        sae_bb = [tuple(i) for i in report["sae_sieve"]["backbone"]]
+        report["enrichment"] = enrichment_tests(X, vpd_bb, sae_bb, comp_rate, args.n_draws, 2)
     suffix = "" if args.sae_edge == "abs" else f"_{args.sae_edge}"
-    (OUT / f"analysis{suffix}.json").write_text(json.dumps(report))
+    (OUT / f"analysis{suffix}.json").write_text(json.dumps(report, default=str))
 
 
 if __name__ == "__main__":
