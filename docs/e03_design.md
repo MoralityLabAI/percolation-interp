@@ -114,3 +114,41 @@ The VPD graph and SAE graph are fixed before these are scored.
   cross-reference results.
 - **Sign.** Graphs use |attribution|. Signed attributions are kept for
   follow-up.
+
+## Addendum: causal validation of the sieved structure
+
+Written 2026-10-12, after P1-P3 were scored (`e03_results.md`) and before any
+causal run. The sieved sets are fixed: the backbones recorded in
+`results/e03/analysis.json`.
+
+**P4: the VPD backbone carries more of the model's behaviour than random components.**
+- **Restriction.** Restrict the decomposition to a component set S. The mask
+  is CI × 1[c ∈ S] per token, which is param-decomp's CI-masked forward with
+  every component outside S switched off; the delta term is excluded, as in
+  param-decomp's own metric.
+- **Measure.** KL(target ‖ restricted), averaged over tokens, on held-out
+  test-split batches.
+- **Sets compared:**
+  - S = the VPD backbone (175 components);
+  - 100 random sets with the same count per module, drawn from alive
+    components and matched on firing-rate decile within each module.
+- **Pass:** the backbone's KL is below every random set's (one-sided
+  p < 0.01).
+- **Reported but not tested:**
+  - the same-size set of each module's highest-mean-CI components, which
+    asks whether the sieve's connectivity adds anything over picking
+    individually important components;
+  - the full CI-masked model (all components) and the zero-masked model, as
+    reference points.
+
+**P5: the SAE backbone carries more than random features, level by level.**
+- **Ablation.** At level l, subtract every non-backbone feature's
+  contribution from the residual stream (a_i d_i), keeping the backbone
+  features, the SAE's error term and its bias, and run the rest of the model.
+- **Measure.** KL to the target.
+- **Comparison.** 100 random feature sets per level, matched in size and on
+  firing-rate decile.
+- **Per-level pass:** the backbone's KL is below every random set's.
+- **P5 passes** if at least 2 of the 3 levels pass.
+- **Caveat:** P1 failed for the SAE graph, so this tests the fallback
+  backbone.
