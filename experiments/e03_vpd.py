@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -38,9 +39,11 @@ def cmd_target(_):
     print(f"target: {ckpt}")
 
 
-def cmd_decompose(_):
+def cmd_decompose(args):
     target = (OUT / "target.txt").read_text().strip()
     cfg = VPD_TEMPLATE.read_text(encoding="utf-8").replace("TARGET_CHECKPOINT", target.replace("\\", "/"))
+    cfg = re.sub(r"(?m)^seed: 0$", f"seed: {args.seed}", cfg, count=1)
+    assert re.search(rf"(?m)^seed: {args.seed}$", cfg)
     cfg_path = OUT / "vpd_config.yaml"
     cfg_path.write_text(cfg, encoding="utf-8")
     import param_decomp
@@ -97,7 +100,7 @@ def main():
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("target")
-    sub.add_parser("decompose")
+    sub.add_parser("decompose").add_argument("--seed", type=int, default=0)
     sub.add_parser("register")
     for name in ("harvest", "attributions"):
         p = sub.add_parser(name)

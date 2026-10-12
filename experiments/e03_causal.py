@@ -58,6 +58,8 @@ def main():
     ap.add_argument("--n-batches", type=int, default=8)
     ap.add_argument("--batch", type=int, default=8)
     ap.add_argument("--n-random", type=int, default=100)
+    ap.add_argument("--sae-backbone", default="sae_sieve", help="analysis.json key of the SAE backbone to test")
+    ap.add_argument("--out-name", default="causal.json")
     args = ap.parse_args()
     dev = args.device
     rng = np.random.default_rng(12)
@@ -65,7 +67,9 @@ def main():
     from param_decomp.models.component_model import ComponentModel, ParamDecompRunInfo
     from param_decomp.models.components import make_mask_infos
 
-    analysis = json.loads((ROOT / "results" / "e03" / "analysis.json").read_text())
+    analysis = json.loads((OUT / "analysis.json").read_text())
+    if args.sae_backbone != "sae_sieve":  # e.g. the in-strength sieve's backbone
+        analysis["sae_sieve"] = analysis[args.sae_backbone]
     X = torch.load(OUT / "crossref.pt", weights_only=False)
     modules, off, foff = X["modules"], X["comp_offsets"], X["feat_offsets"]
     crate = X["n_comp"].numpy() / X["tokens"]
@@ -145,7 +149,8 @@ def main():
            "sizes": {"components": {m: len(v) for m, v in bb.items()}, "features": {l: len(v) for l, v in fbb.items()}},
            "tokens": args.n_batches * args.batch * 512}
     res["P5"]["levels_passing"] = int(sum(res["P5"][str(l)]["p_value"] < 0.01 for l in range(3) if fbb[l]))
-    (OUT / "causal.json").write_text(json.dumps(res, indent=1))
+    res["sae_backbone_source"] = args.sae_backbone
+    (OUT / args.out_name).write_text(json.dumps(res, indent=1))
     p4 = res["P4"]
     print(f"P4: backbone KL {p4['backbone']:.3f} vs random median {p4['random_median']:.3f} (min {p4['random_min']:.3f}), "
           f"p {p4['p_value']:.3f}; top-CI {p4['top_ci']:.3f}; all {p4['all']:.3f}; none {p4['none']:.3f}")

@@ -8,12 +8,14 @@ Residual tower levels for the 2-layer target:
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import torch
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT = ROOT / "out" / "e03"
+# E03_OUT selects a replication's folder (default: the original run).
+OUT = Path(os.environ.get("E03_OUT", ROOT / "out" / "e03"))
 TOKENIZER = "SimpleStories/test-SimpleStories-gpt2-1.25M"
 DATASET = "SimpleStories/SimpleStories"
 

@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
 
 import numpy as np
@@ -22,7 +23,7 @@ from percinterp import LayeredDAG
 from percinterp.sieve import sieve
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT = ROOT / "out" / "e03"
+OUT = Path(os.environ.get("E03_OUT", ROOT / "out" / "e03"))
 MIN_RATE = 1e-5  # alive: fires on at least this fraction of tokens
 MIN_CO = 5  # PMI only for pairs that co-fire at least this often
 
@@ -276,6 +277,9 @@ def enrichment_tests(X, vpd_backbone_ids, sae_backbone_ids, comp_rate, n_draws, 
                                                        comp_rate=crate, **kw)
         out["P2_jaccard"] = enrichment(jaccard_matrix(X), comp_bb, comp_pool, feat_bb, feat_pool, feat_rate,
                                        levels_cofire, rng=np.random.default_rng(seed + 4), **kw)
+        out["P2_jaccard_rate_matched_both"] = enrichment(jaccard_matrix(X), comp_bb, comp_pool, feat_bb, feat_pool,
+                                                         feat_rate, levels_cofire, rng=np.random.default_rng(seed + 7),
+                                                         comp_rate=crate, **kw)
         out["P3_components_fixed"] = enrichment(cos, comp_bb, comp_pool, feat_bb, feat_pool, feat_rate,
                                                 levels_weight, rng=np.random.default_rng(seed + 5),
                                                 fix="components", **kw)
@@ -295,6 +299,8 @@ def main():
     ap.add_argument("--n-draws", type=int, default=1000)
     ap.add_argument("--only", choices=["sae", "all"], default="all")
     ap.add_argument("--sae-edge", choices=["abs", "signed"], default="abs")
+    ap.add_argument("--strength-null", action="store_true",
+                    help="also sieve both graphs against the in-strength-preserving null (within-target shuffles)")
     args = ap.parse_args()
     report = {}
     g, w, sae_ids = sae_graph(args.sae_edge)
@@ -307,7 +313,15 @@ def main():
         report["vpd_sieve"] = sieve_record(vpd_res, vpd_ids)
         vpd_bb = [i for i in report["vpd_sieve"]["backbone"] if i[0] not in ("embed", "output")]
         sae_bb = [tuple(i) for i in report["sae_sieve"]["backbone"]]
-        report["enrichment"] = enrichment_tests(X, vpd_bb, sae_bb, comp_rate, args.n_draws, 2)
+        report["enrichment"] = enrichment_tests(X, vpd_bb, sae_bb, comp_rate, args.n_draws, 2,
+                                                variants=args.strength_null)
+        if args.strength_null:
+            report["vpd_sieve_in_strength"] = sieve_record(
+                run_sieve("VPD graph, in-strength null", g, w, args.n_shuffles, 3, null_groups=g.dst), vpd_ids)
+    if args.strength_null:
+        g, w, sae_ids = sae_graph(args.sae_edge)
+        report["sae_sieve_in_strength"] = sieve_record(
+            run_sieve("SAE graph, in-strength null", g, w, args.n_shuffles, 4, null_groups=g.dst), sae_ids)
     suffix = "" if args.sae_edge == "abs" else f"_{args.sae_edge}"
     (OUT / f"analysis{suffix}.json").write_text(json.dumps(report, default=str))
 
