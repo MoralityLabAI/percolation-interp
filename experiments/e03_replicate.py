@@ -4,7 +4,7 @@ Stages run in order, each GPU stage under its own vramorama lease, logging to
 out/e03_seed<N>/<stage>.log. A stage is skipped when its output already exists, so the driver
 can be rerun after an interruption. Pre-registered predictions: docs/e03_replication.md.
 
-  python experiments/e03_replicate.py --seed 1
+  python experiments/e03_replicate.py --seed 1 2
 (run with the param-decomp venv's python; the analysis stage uses this repo's venv)
 """
 
@@ -36,9 +36,13 @@ def run(stage, cmd, out, gpu_mib=None):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--seed", type=int, required=True)
+    ap.add_argument("--seed", type=int, nargs="+", required=True, help="one or more seeds, run in order")
     args = ap.parse_args()
-    s = args.seed
+    for s in args.seed:
+        run_seed(s)
+
+
+def run_seed(s):
     out = ROOT / "out" / f"e03_seed{s}"
     out.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(ROOT / "out" / "e03" / "target.txt", out / "target.txt")
