@@ -50,6 +50,8 @@ Revisions to it are recorded there and were made before any e03 data. Run
 | P1, SAE graph | peak z 2.7 against shuffle peaks up to 3.8; p = 0.089 | **fail** |
 | P2, co-firing (best PMI) | sieved sets 0.77× the matched random sets; p = 1.0 | **fail** (opposite direction) |
 | P3, weight directions (best \|cos\|) | sieved sets 1.36× the matched random sets; p = 0.001, the floor for 1,000 draws | **pass** |
+| P4, causal: VPD backbone only (addendum, 2026-10-12) | KL 6.33 against matched random sets, median 20.2 and best 15.9; p = 0.010 | **pass** |
+| P5, causal: SAE backbone only, per level (addendum) | passes at level 2 (p = 0.010), not at level 1 (p = 0.05) or level 0 (p = 0.5): 1 of 3 levels, 2 needed | **fail** |
 
 - **Sieved structures.**
   - **VPD (c\* = 0.20):** 175 components (mostly MLP up/down and attention
@@ -85,8 +87,15 @@ Revisions to it are recorded there and were made before any e03 data. Run
   - peak z 6.7 (out-strength kept) and 8.2 (in-strength kept);
   - p = 0.02, the floor for 50 shuffles.
 - So the SAE tower has wiring structure, but frequency hubs mask it from the
-  simple within-layer shuffle. The VPD graph has not yet been run against
-  these controls.
+  simple within-layer shuffle.
+- **The VPD graph holds up against the same controls.** Its P1 pass survives
+  both, with the same c\* and backbone:
+  - peak z 44.0 with out-strength kept (shuffle maximum 9.3);
+  - peak z 23.9 with in-strength kept (shuffle maximum 6.6).
+- **The hubs sit on different sides.** VPD's large-c hub concentration
+  disappears once out-strength is kept (z −1.2, from about −300), so it comes
+  from a few components with very strong outgoing attributions. The SAE
+  graph's hubs were on the receiving side.
 
 **3. The P2 failure is not mainly about frequency, and the co-firing measures disagree.**
 - **Frequency explains only part of it.** Sieved units fire far more often
@@ -112,6 +121,32 @@ Revisions to it are recorded there and were made before any e03 data. Run
   - SAE backbone features align better with VPD components than random
     features do (1.12×, p = 0.001).
 
+## Causal validation (addendum P4, P5)
+
+Pre-registered on 2026-10-12, after P1-P3, before any causal run. Scored on
+32k held-out tokens.
+
+![causal](figures/e03/causal.png)
+
+- **VPD (P4 passes).** Keep only the 175 sieved components (11% of the alive
+  ones), switching the rest off per token through param-decomp's
+  causal-importance masks:
+  - KL to the full model falls from 27.6 (all components off) to 6.3;
+  - 100 frequency-matched random sets of the same size only reach 15.9-24.6;
+  - all components together give 0.48.
+
+  Exploratory: the sieved set also beats the same-size set of each module's
+  individually most important components (highest mean CI), 6.3 against 7.9.
+  Choosing by connectivity adds something over choosing by importance.
+- **SAE tower (P5 fails).** Keeping only the sieved features, with everything
+  else in that level's SAE ablated:
+  - level 2 beats every random set;
+  - level 1 sits at the edge (p = 0.05);
+  - level 0 is no better than random.
+
+  This is consistent with P1 failing for the SAE graph under the
+  pre-registered control.
+
 ## Caveats
 
 - One tiny target, one seed, one SAE size. VPD ran for a tenth of the paper's
@@ -128,9 +163,10 @@ Revisions to it are recorded there and were made before any e03 data. Run
 
 ## Next
 
-1. Run the VPD graph against strength-preserving controls, to see whether its
-   P1 pass survives them.
-2. Validate the backbone causally: fidelity of the backbone-only subgraph
-   against same-size random subgraphs, using param-decomp's component masking.
-3. More seeds for target and SAEs; a longer VPD run.
+1. Done: VPD against strength-preserving controls (holds), and causal
+   validation (VPD passes, SAE fails).
+2. Rerun the SAE sieve and P5 with the strength-preserving control as the
+   primary null. Pre-register it first, since it is now motivated by these
+   results.
+3. More seeds for target, SAEs and VPD, and a longer VPD run.
 4. Port to a Qwen3-0.6B slice (one or two blocks) with a Qwen topology adapter.

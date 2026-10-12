@@ -80,8 +80,36 @@ def fig_enrichment(r, f, path):
     plt.close(fig)
 
 
+def fig_causal(c, path):
+    fig, axes = plt.subplots(1, 4, figsize=(12.5, 3.0), gridspec_kw={"width_ratios": [1.6, 1, 1, 1]})
+    panels = [("VPD components (P4)", c["P4"], [("all components", c["P4"]["all"]), ("top mean-CI set", c["P4"]["top_ci"]),
+                                                 ("none", c["P4"]["none"])])]
+    for l in range(3):
+        r = c["P5"][str(l)]
+        panels.append((f"SAE level {l} (P5)", r, [("all features ablated", r["all_ablated"])]))
+    for ax, (title, r, refs) in zip(axes, panels):
+        ax.hist(r["random"], bins=20, color=plotstyle.MUTED, alpha=0.6, label="matched random sets")
+        ax.axvline(r["backbone"], color=plotstyle.SERIES[0], lw=2, label="sieved backbone")
+        for k, (name, v) in enumerate(refs):
+            ax.axvline(v, color=plotstyle.SERIES[1 + k % 2] if name != "none" else plotstyle.INK_2, lw=1.2, ls="--",
+                       label=name)
+        ax.set_title(f"{title}: p {r['p_value']:.3f}", fontsize=9)
+        ax.set_xlabel("KL(target || restricted), nats/token")
+        ax.grid(axis="y", visible=False)
+    axes[0].set_xscale("log")
+    axes[0].legend(loc="upper left", fontsize=7)
+    axes[1].legend(loc="upper left", fontsize=7)
+    fig.suptitle("Causal check: keep only the sieved structure (lower KL = more of the behaviour kept)",
+                 x=0.01, ha="left", fontsize=10, color=plotstyle.INK)
+    fig.tight_layout()
+    fig.savefig(path)
+    plt.close(fig)
+
+
 def main():
     FIG.mkdir(parents=True, exist_ok=True)
+    if (OUT / "causal.json").exists():
+        fig_causal(json.loads((OUT / "causal.json").read_text()), FIG / "causal.png")
     r = json.loads((OUT / "analysis.json").read_text())
     f = json.loads((OUT / "enrichment_followup.json").read_text())
     fig_sieve(r, FIG / "sieve_curves.png")
