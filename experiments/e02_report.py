@@ -80,6 +80,25 @@ def score_run(r):
         absv = np.array([c["abs_bb_node_ref"] for c in ck])
         ok = after & np.isfinite(norms)
         out["h3_abs_spearman_norm"] = float(spearmanr(absv[ok], norms[ok])[0]) if ok.sum() > 3 else None
+    # H2' (depth arm): c at which the mean hidden-layer backbone node fraction first reaches 0.25
+    cs_grid = r["ps"]
+
+    def c_bb(rec, key):
+        return crossing(cs_grid, rec[key], 0.25)
+
+    cb = {k: (c_bb(init, f"{k}_bb_node"), c_bb(final, f"{k}_bb_node")) for k in ("rank", "shuf")}
+    out["c_bb"] = cb
+    if all(v is not None for pair in cb.values() for v in pair):
+        out["delta_prime"] = math.log(cb["rank"][1] / cb["shuf"][1]) - math.log(cb["rank"][0] / cb["shuf"][0])
+    else:
+        out["delta_prime"] = None
+    # H3-peak (depth arm): peak of learned connectivity in [0.5, 1.0] x t_grok, then >= 30% fall by the end
+    if t_grok:
+        kp = int(np.argmax(learned))
+        out["h3_peak_step_over_tgrok"] = float(steps[kp] / t_grok)
+        out["h3_peak_fall"] = float((learned[kp] - learned[-1]) / learned[kp]) if learned[kp] > 0 else None
+        out["h3_peak_pass"] = bool(0.5 <= out["h3_peak_step_over_tgrok"] <= 1.0
+                                   and out["h3_peak_fall"] is not None and out["h3_peak_fall"] >= 0.3)
     out["series"] = {
         "step": steps.tolist(), "learned": learned.tolist(),
         "rank": [c["rank_bb_node_ref"] for c in ck], "shuf": [c["shuf_bb_node_ref"] for c in ck],
@@ -118,6 +137,29 @@ def verdicts(runs):
             "deltas": d.tolist(), "mean": float(d.mean()), "sd": sd,
             "pass": bool(d.mean() < 0 and (len(d) < 2 or abs(d.mean()) > sd)),
         }
+    # depth arm, stricter H1b: backbone axis must beat both nominal c and kept fraction p (~ c/N)
+    p_half = [np.mean([r["c_half"] / r["width"] for r in rs]) for rs in by_cfg.values()]
+    if len(c_half) >= 2:
+        cv_p = float(np.std(p_half) / np.mean(p_half))
+        v["H1b_strict"] = {"n_configs": len(c_half), "cv_c": v["H1b"]["cv_c"], "cv_p": cv_p,
+                           "cv_backbone": v["H1b"]["cv_backbone"],
+                           "pass": v["H1b"]["cv_backbone"] < min(v["H1b"]["cv_c"], cv_p)}
+    dps = defaultdict(list)
+    for r in g:
+        if r.get("delta_prime") is not None:
+            dps[(r["depth"], r["width"])].append(r["delta_prime"])
+    v["H2_prime"] = {}
+    for key, d in sorted(dps.items()):
+        d = np.array(d)
+        sd = float(d.std(ddof=1)) if len(d) > 1 else float("nan")
+        v["H2_prime"][f"D{key[0]}_N{key[1]}"] = {
+            "deltas": d.tolist(), "mean": float(d.mean()), "sd": sd,
+            "pass": bool(d.mean() < 0 and (len(d) < 2 or abs(d.mean()) > sd)),
+            "confirmatory": key[0] in (4, 8)}
+    peaks = [r.get("h3_peak_pass") for r in g if r.get("h3_peak_pass") is not None]
+    v["H3_peak"] = {"n_runs": len(peaks), "n_pass": int(sum(peaks)),
+                    "pass": bool(peaks) and (len(peaks) - sum(peaks)) <= len(peaks) / 3,
+                    "per_run": {r["name"]: (r.get("h3_peak_step_over_tgrok"), r.get("h3_peak_fall")) for r in g}}
     v["H3_rank"] = {r["name"]: r.get("h3_rank_in_window") for r in g}
     v["H3_abs"] = {r["name"]: r.get("h3_abs_spearman_norm") for r in g}
     return v
