@@ -273,6 +273,16 @@ Uses accuracy only; no graph is analysed before the choice is made.
   two depths. Ties go to the setting with fewer changes from step 2.
 - **If none qualifies:** report that, and do not run a depth grid.
 
+### Search result (2026-10-13)
+
+- **Selected: F** (Kaiming initialisation, training fraction 0.5). It is the
+  only setting in which both depths grok.
+  - Depth 4: 95% test accuracy at step 24,400; final 1.000.
+  - Depth 8: 95% at step 28,300; final 0.992.
+- **Every other setting stayed at chance** (final test accuracy 0.006-0.014),
+  including Kaiming alone (B) and the larger training fraction alone (E).
+- Histories: `results/e02_search/`.
+
 ### Depth grid after selection
 
 - **Grid.** The chosen setting, width 128, depths 2, 4 and 8, seeds 0-2.
