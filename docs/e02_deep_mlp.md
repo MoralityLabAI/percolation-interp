@@ -124,3 +124,64 @@ roughly 6-12% of edges kept per layer, and 3-5% of edges on the backbone.
    with its mean. Then re-score fidelity with node-level ablation of orphans.
 3. **Explain the cleanup decline.** Track how many distinct neurons carry the
    top-ranked edges over training.
+
+
+## Depth arm (setting F)
+
+Criteria: `plan.md`, "Depth arm", written before the search ran.
+
+**Search.**
+- Only setting F (Kaiming initialisation, training fraction 0.5) grokked at
+  both depth 4 and depth 8.
+- Kaiming alone, the larger training fraction alone, a lower learning rate
+  and a smaller initialisation all stayed at chance.
+
+**Grid** (widths 128 and 256, seeds 0-2):
+
+| Depth | Grokked |
+|---|---|
+| 2 | 6 of 6 |
+| 4 | 6 of 6 |
+| 8 | 1 of 6 |
+
+Depth 8 under setting F is seed-fragile. Non-grokked runs are excluded as
+pre-registered, so 13 runs are scored.
+
+| Criterion | Result | Verdict |
+|---|---|---|
+| H1a, dangling edges inert | gap up to 0.17 | **fail**, as at depth 2 |
+| H1b (strict), fidelity collapses on backbone fraction better than on c and p | coefficient of variation 0.46 on the backbone axis, 0.30 on c, 0.14 on kept fraction p | **fail** |
+| H2′, Δ′ < 0 beyond seed spread (confirmatory at depths 4 and 8) | depth 4: −0.30 ± 0.13 (width 128), −0.28 ± 0.04 (width 256); depth 8, one run: −0.52 | **pass** at depth 4; depth 8 untestable (n = 1) |
+| H3-peak: peak in [0.5, 1.0] × t_grok, then a fall of at least 30% | 3 of 13 runs | **fail** |
+| H3-rank / H3-abs | 6 of 13 / 6 of 13 | weak / fail |
+
+**H2′ is the depth arm's positive result.**
+- Training makes the graph's backbone reach 25% of hidden nodes with fewer
+  kept edges than its shuffled control needs, relative to the same comparison
+  at initialisation.
+- That holds at every depth and width tested: Δ′ from −0.28 to −0.69.
+- Depth 2 is exploratory, since its data were seen before H2′ was defined.
+  Depth 4 is confirmatory.
+- The spanning point (old H2) said the opposite, because it moved in coarse
+  steps (see above).
+
+![depth fidelity](figures/e02_depth/h1_fidelity.png)
+
+**H1b fails for an instructive reason.**
+- Against nominal c, the fidelity curves for different depths nearly coincide.
+- Against backbone edge fraction, they fan out: deeper networks need a larger
+  share of their edges on the backbone for the same fidelity.
+- At a single depth (depth 2 above) the backbone axis looked good, but it does
+  not transfer across depths.
+
+![depth over training](figures/e02_depth/h3_over_training.png)
+
+**H3-peak fails on timing, not shape.**
+- Under setting F the connectivity peak sits at the grokking step:
+  0.7-1.7 × t_grok, mostly 0.9-1.2.
+- The pre-registered window [0.5, 1.0] was taken from depth-2 runs under the
+  old setting, where grokking came much later.
+- At depth 4 the fall after the peak is smaller (16-38%).
+- At depth 8 the ranked graph stays below its shuffle for most of training:
+  the hub concentration seen in e03.
+- Absolute thresholds become erratic at depths 4 and 8.
