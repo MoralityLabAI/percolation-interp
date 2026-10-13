@@ -283,6 +283,18 @@ Uses accuracy only; no graph is analysed before the choice is made.
   including Kaiming alone (B) and the larger training fraction alone (E).
 - Histories: `results/e02_search/`.
 
+### Depth grid result (2026-10-13)
+
+- **Setting F, widths 128 and 256, seeds 0-2.** Histories:
+  `results/e02_depth/`.
+- **Depth 2:** 6 of 6 grokked, with 95% test accuracy at steps 3,100-5,800.
+- **Depth 4:** 6 of 6 grokked (steps 10,500-24,400).
+- **Depth 8:** 1 of 6 grokked: width 128, seed 0, the search run. The other
+  five ended at test accuracy 0.01-0.16.
+- **What this means for the criteria:** as pre-registered, non-grokked runs
+  are reported and excluded. The depth arm rests on depths 2 and 4, plus a
+  single depth-8 run. That is too few for the seed-spread criteria at depth 8.
+
 ### Depth grid after selection
 
 - **Grid.** The chosen setting, width 128, depths 2, 4 and 8, seeds 0-2.
