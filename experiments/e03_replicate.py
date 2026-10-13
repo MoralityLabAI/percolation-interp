@@ -12,9 +12,11 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -32,6 +34,37 @@ def run(stage, cmd, out, gpu_mib=None):
     env = dict(os.environ, E03_OUT=str(out))
     with open(log, "w", encoding="utf-8") as f:
         subprocess.run(cmd, cwd=ROOT, env=env, stdout=f, stderr=subprocess.STDOUT, check=True)
+
+
+VPD_STEPS = 40000
+
+
+def find_decomposition(seed: int, target_dir: str) -> Path | None:
+    """The decomposition of this target with this seed, identified by its final_config.yaml.
+
+    Several seeds may train at once, so a run is never identified by which folder appeared last.
+    """
+    for d in sorted((PD_OUT / "decompositions").glob("*")):
+        cfg = d / "final_config.yaml"
+        if cfg.exists():
+            text = cfg.read_text(encoding="utf-8")
+            if re.search(rf"(?m)^seed: {seed}$", text) and target_dir in text:
+                return d
+    return None
+
+
+def wait_until_complete(run_dir: Path, stall_minutes: int = 45):
+    """Block until the run's final checkpoint exists (it may be training in another process)."""
+    final = run_dir / f"model_{VPD_STEPS}.pth"
+    metrics = run_dir / "metrics.jsonl"
+    while not final.exists():
+        age = time.time() - max(p.stat().st_mtime for p in [run_dir, *run_dir.iterdir()])
+        if age > 60 * stall_minutes:
+            raise RuntimeError(f"{run_dir.name} has not progressed for {age / 60:.0f} minutes")
+        print(f"waiting for {run_dir.name} ({metrics.stat().st_size if metrics.exists() else 0} bytes of metrics)",
+              flush=True)
+        time.sleep(300)
+    time.sleep(30)  # let the final save finish
 
 
 def main():
@@ -53,11 +86,14 @@ def run_seed(s):
     if not (out / "sae_graph.pt").exists():
         run("sae_graph", [PD_PY, "-u", f"{exp}/e03_sae_graph.py", "--device", "cuda", "--n-batches", "16"], out, 2048)
     if not (out / "vpd_run.txt").exists():
-        before = {p.name for p in (PD_OUT / "decompositions").glob("*")}
-        run("vpd", [PD_PY, "-u", f"{exp}/e03_vpd.py", "decompose", "--seed", str(s)], out, 6144)
-        new = sorted({p.name for p in (PD_OUT / "decompositions").glob("*")} - before)
-        assert len(new) == 1, f"expected one new decomposition, found {new}"
-        run_id = new[0]
+        target_dir = Path((out / "target.txt").read_text().strip()).parent.parent.name
+        found = find_decomposition(s, target_dir)
+        if found is None:
+            run("vpd", [PD_PY, "-u", f"{exp}/e03_vpd.py", "decompose", "--seed", str(s)], out, 6144)
+            found = find_decomposition(s, target_dir)
+            assert found is not None, f"no decomposition with seed {s} after the VPD stage"
+        wait_until_complete(found)
+        run_id = found.name
         cache = PD_OUT / "runs" / f"param-decomp-{run_id}"
         if not cache.exists():
             shutil.copytree(PD_OUT / "decompositions" / run_id, cache)

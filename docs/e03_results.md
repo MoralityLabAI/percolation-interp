@@ -147,6 +147,27 @@ Pre-registered on 2026-10-12, after P1-P3, before any causal run. Scored on
   This is consistent with P1 failing for the SAE graph under the
   pre-registered control.
 
+## Replication (`e03_replication.md`)
+
+Same target, new SAE and VPD seeds. Seed 2 is still running.
+
+| ID | Prediction | Seed 1 | Seed 2 |
+|---|---|---|---|
+| R1 | VPD sieve significant: within-layer and in-strength controls | **pass**: peak z 27.1 and 32.5, against shuffle maxima 4.5 and 5.1 | pending |
+| R2 | SAE sieve significant against the in-strength control | **pass**: peak z 9.4 against shuffle maximum 3.4 | pending |
+| R3a | Sieved sets align in weight space (P3) | **pass**: 1.22×, p = 0.001 | pending |
+| R3b | Jaccard co-firing enriched, both sides frequency-matched | **pass**: 1.29×, p = 0.003 | pending |
+| R4a | VPD backbone beats matched random sets causally (P4) | **pass**: KL 6.16 against best random 14.6 | pending |
+| R4b | VPD backbone beats the top-mean-CI set | **pass**: 6.16 against 7.61 | pending |
+| R5 | SAE backbone, from the in-strength sieve, beats random features in ≥ 2 of 3 levels | **fail**: p = 0.35, 0.12, 0.14 | pending |
+
+Not predicted either way:
+- **P2 (PMI):** 0.78× again.
+- **SAE graph against the within-layer control:** p = 0.03, again not
+  significant.
+- **P3 with one side held fixed:** weaker than on seed 0 (p = 0.07-0.08,
+  against 0.001-0.002).
+
 ## Caveats
 
 - One tiny target, one seed, one SAE size. VPD ran for a tenth of the paper's
