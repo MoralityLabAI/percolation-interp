@@ -149,24 +149,37 @@ Pre-registered on 2026-10-12, after P1-P3, before any causal run. Scored on
 
 ## Replication (`e03_replication.md`)
 
-Same target, new SAE and VPD seeds. Seed 2 is still running.
+Same target model, new SAE and VPD seeds (1 and 2), predictions written before
+either seed ran.
 
-| ID | Prediction | Seed 1 | Seed 2 |
-|---|---|---|---|
-| R1 | VPD sieve significant: within-layer and in-strength controls | **pass**: peak z 27.1 and 32.5, against shuffle maxima 4.5 and 5.1 | pending |
-| R2 | SAE sieve significant against the in-strength control | **pass**: peak z 9.4 against shuffle maximum 3.4 | pending |
-| R3a | Sieved sets align in weight space (P3) | **pass**: 1.22×, p = 0.001 | pending |
-| R3b | Jaccard co-firing enriched, both sides frequency-matched | **pass**: 1.29×, p = 0.003 | pending |
-| R4a | VPD backbone beats matched random sets causally (P4) | **pass**: KL 6.16 against best random 14.6 | pending |
-| R4b | VPD backbone beats the top-mean-CI set | **pass**: 6.16 against 7.61 | pending |
-| R5 | SAE backbone, from the in-strength sieve, beats random features in ≥ 2 of 3 levels | **fail**: p = 0.35, 0.12, 0.14 | pending |
+| ID | Prediction | Seed 1 | Seed 2 | Verdict |
+|---|---|---|---|---|
+| R1 | VPD sieve significant: within-layer and in-strength controls | pass: peak z 27.1 / 32.5 | pass: 28.5 / 30.6 | **replicates** |
+| R2 | SAE sieve significant against the in-strength control | pass: z 9.4 (shuffle max 3.4) | pass: z 6.6 (shuffle max 3.5) | **replicates** |
+| R3a | Sieved sets align in weight space (P3) | pass: 1.22×, p = 0.001 | pass: 1.27×, p = 0.001 | **replicates** |
+| R3b | Jaccard co-firing enriched, both sides frequency-matched | pass: 1.29×, p = 0.003 | pass: 1.25×, p = 0.004 | **replicates** |
+| R4a | VPD backbone beats matched random sets causally (P4) | pass: KL 6.16 against best random 14.6 | pass: 5.73 against 15.7 | **replicates** |
+| R4b | VPD backbone beats the top-mean-CI set | pass: 6.16 against 7.61 | pass: 5.73 against 8.10 | **replicates** |
+| R5 | SAE backbone (in-strength sieve) beats random features in ≥ 2 of 3 levels | fail: p = 0.35, 0.12, 0.14 | fail: p = 0.40, 0.06, 0.05 | **does not replicate** |
 
-Not predicted either way:
-- **P2 (PMI):** 0.78× again.
-- **SAE graph against the within-layer control:** p = 0.03, again not
-  significant.
-- **P3 with one side held fixed:** weaker than on seed 0 (p = 0.07-0.08,
-  against 0.001-0.002).
+**What holds across all three decompositions** (seed 0 and both replication
+seeds):
+- The percolation sieve finds connected structure in the VPD graph, and that
+  structure survives every control.
+- Keeping only those components preserves far more of the model's behaviour
+  than size- and frequency-matched random components do: KL 5.7-6.3, against
+  14.6-24.6 for random sets.
+- It also preserves more than the same number of individually most important
+  components (KL 7.6-8.1).
+- The sieved VPD structure and the sieved SAE structure point the same way in
+  weight space, and overlap in when they fire.
+
+**What fails consistently:**
+- The SAE graph's sieved structure carries no special causal weight.
+- The SAE graph's connectivity is significant only once feature strengths are
+  held fixed.
+- Specific co-firing (PMI) between the sieved sets is below chance in every
+  decomposition (0.76-0.78×).
 
 ## Caveats
 
