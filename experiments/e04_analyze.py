@@ -1,9 +1,9 @@
 """e04: percolation sieve on the Qwen slice's VPD component graph (Q1).
 
-Graph: alive components of layers 13-14 in residual-stream order -> one output node.
+Graph: alive components of layers 2-3 in residual-stream order -> one output node.
   - edges: |regular_attr_abs| between components; component -> output with the norm of the
     component's effect in logit space, sqrt(m^T (W W^T) m) for its residual-space attribution m;
-  - sources: layer-13 components that read the residual stream (q, k, v, gate, up);
+  - sources: layer-2 components that read the residual stream (q, k, v, gate, up);
   - sink: the output node.
 Sieved twice: against within-layer shuffles (the backbone used by Q2/Q3, as in e03) and against
 in-strength-preserving shuffles.

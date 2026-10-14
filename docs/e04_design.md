@@ -22,7 +22,7 @@ e04 tests whether those two results transfer to a real pretrained model.
   attention, SwiGLU MLP.
 - **VPD slice.** Layers 2 and 3 (revised from 13 and 14; see below), all seven projections each (q, k, v, o,
   gate, up, down). Everything else is frozen and undecomposed. Config:
-  `configs/e04/vpd_qwen3_0.6b_L13-14.yaml`.
+  `configs/e04/vpd_qwen3_0.6b_L2-3.yaml` (originally `vpd_qwen3_0.6b_L13-14.yaml`).
   - 7,680 components in total.
   - The e03 loss recipe and global CI function, with the delta component on.
   - bf16 autocast.
@@ -35,7 +35,8 @@ e04 tests whether those two results transfer to a real pretrained model.
   - Built with param-decomp's dataset-attribution harvester, edge statistic
     |attr_abs| as in e03.
   - The embedding is removed as a source: the slice's input is the residual
-    stream after 13 frozen layers, not raw tokens.
+    stream after the frozen layers before it (13 originally, 2 after the
+    revision), not raw tokens.
   - Removing it is also necessary on memory grounds. Vocabulary × components
     accumulators would need about 9 GB.
 - **Nodes and edges.**
@@ -109,6 +110,15 @@ scored.
 
 Clarification, added before any e04 analysis: "the sieved components" in Q2 and Q3
 are the backbone of the within-layer sieve at its c*, as in e03's P4.
+
+Clarification, added 2026-10-15 while the layers 2-3 decomposition trained, before any
+of its outputs existed: the held-out rows are split three ways by one fixed shuffle.
+- Firing statistics come from rows 0-1,999.
+- Attributions, and so the graph and the backbone, come from rows 2,000-3,999.
+- The causal test (Q2, Q3) comes from rows 4,000-5,909.
+
+The rows that select the backbone are never the rows that test it. The pipeline
+code had read attributions from the training split; the setup above says held-out.
 
 **Q3: better than picking by importance.**
 - Pass: the sieved set's KL is below that of the same-size top-mean-CI set.

@@ -20,7 +20,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-from e04_common import MIN_RATE, OUT, ci_lower, find_run, heldout_loader, load_component_model, load_stats
+from e04_common import MIN_RATE, OUT, ci_lower, find_run, heldout_part, load_component_model, load_stats
 
 
 def decile_sampler(rate, pool, rng):
@@ -83,7 +83,7 @@ def main():
     kl = {name: 0.0 for name in sets}
     t0 = time.time()
     with torch.no_grad():
-        for b, idx in enumerate(heldout_loader(args.batch, seed=4)):
+        for b, idx in enumerate(heldout_part(args.batch, "causal")):
             if b >= args.n_batches:
                 break
             idx = idx.to(dev)

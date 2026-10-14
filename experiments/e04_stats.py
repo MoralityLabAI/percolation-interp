@@ -11,7 +11,7 @@ import time
 
 import torch
 
-from e04_common import CI_FIRE, OUT, ci_lower, find_run, heldout_loader, load_component_model
+from e04_common import CI_FIRE, OUT, ci_lower, find_run, heldout_part, load_component_model
 
 
 def main():
@@ -28,7 +28,7 @@ def main():
     ci_sum = {m: torch.zeros(cm.module_to_c[m], dtype=torch.float64, device=args.device) for m in modules}
     tokens, t0 = 0, time.time()
     with torch.no_grad():
-        for b, idx in enumerate(heldout_loader(args.batch, seed=3)):
+        for b, idx in enumerate(heldout_part(args.batch, "stats")):
             if b >= args.n_batches:
                 break
             ci = ci_lower(cm, run_info, idx.to(args.device))

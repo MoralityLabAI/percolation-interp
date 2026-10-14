@@ -20,13 +20,8 @@ CI_FIRE = 0.1
 STAGE = {"attn.q": 0, "attn.k": 0, "attn.v": 0, "attn.o": 1, "glu.gate": 2, "glu.up": 2, "glu.down": 3}
 
 
-def find_run(checkpoint_step: int | None = None) -> str:
-    """Run id of the e04 decomposition, registered in the local runs cache.
-
-    With checkpoint_step, registers a copy holding only that checkpoint (for testing on a
-    run that is still training) and returns the path to that checkpoint, which
-    ParamDecompRunInfo.from_path accepts (a suffixed id would not parse as a run id).
-    """
+def find_decomposition() -> Path | None:
+    """The e04 decomposition's folder, identified by model, steps and slice in its final_config.yaml."""
     for d in sorted((PD_OUT / "decompositions").glob("*")):
         cfg = d / "final_config.yaml"
         if not cfg.exists():
@@ -34,17 +29,30 @@ def find_run(checkpoint_step: int | None = None) -> str:
         text = cfg.read_text(encoding="utf-8")
         if (f"pretrained_model_name: {MODEL}" in text and re.search(rf"(?m)^steps: {STEPS}$", text)
                 and all(f"model.layers.{l}." in text for l in SLICE)):
-            step = checkpoint_step or STEPS
-            ckpt = d / f"model_{step}.pth"
-            assert ckpt.exists(), f"{ckpt} not found"
-            run_id = d.name if checkpoint_step is None else f"{d.name}-s{step}"
-            cache = PD_OUT / "runs" / f"param-decomp-{run_id}"
-            if not cache.exists():
-                cache.mkdir(parents=True)
-                shutil.copyfile(cfg, cache / "final_config.yaml")
-                shutil.copyfile(ckpt, cache / ckpt.name)
-            return run_id if checkpoint_step is None else str(cache / ckpt.name)
-    raise SystemExit("no e04 decomposition found")
+            return d
+    return None
+
+
+def find_run(checkpoint_step: int | None = None) -> str:
+    """Run id of the e04 decomposition, registered in the local runs cache.
+
+    With checkpoint_step, registers a copy holding only that checkpoint (for testing on a
+    run that is still training) and returns the path to that checkpoint, which
+    ParamDecompRunInfo.from_path accepts (a suffixed id would not parse as a run id).
+    """
+    d = find_decomposition()
+    if d is None:
+        raise SystemExit("no e04 decomposition found")
+    step = checkpoint_step or STEPS
+    ckpt = d / f"model_{step}.pth"
+    assert ckpt.exists(), f"{ckpt} not found"
+    run_id = d.name if checkpoint_step is None else f"{d.name}-s{step}"
+    cache = PD_OUT / "runs" / f"param-decomp-{run_id}"
+    if not cache.exists():
+        cache.mkdir(parents=True)
+        shutil.copyfile(d / "final_config.yaml", cache / "final_config.yaml")
+        shutil.copyfile(ckpt, cache / ckpt.name)
+    return run_id if checkpoint_step is None else str(cache / ckpt.name)
 
 
 def load_component_model(run_id: str, device: str = "cuda"):
@@ -83,6 +91,21 @@ def heldout_loader(batch_size: int, seed: int, n_ctx: int = 128):
     """Token batches (B, n_ctx) from the held-out 5% of pile-10k, in a seed-fixed row order."""
     rows = heldout_tokens(n_ctx)
     order = torch.randperm(len(rows), generator=torch.Generator().manual_seed(seed))
+    for i in range(0, len(order) - batch_size + 1, batch_size):
+        yield rows[order[i:i + batch_size]]
+
+
+# Disjoint ranges of one fixed shuffle of the held-out rows (5,910 at n_ctx 128), so the rows
+# that select the backbone (attributions) are never the rows that test it (causal).
+PARTS = {"stats": (0, 2000), "attributions": (2000, 4000), "causal": (4000, 5910)}
+
+
+def heldout_part(batch_size: int, part: str, n_ctx: int = 128):
+    """Token batches (B, n_ctx) from one part of the held-out rows."""
+    rows = heldout_tokens(n_ctx)
+    order = torch.randperm(len(rows), generator=torch.Generator().manual_seed(0))
+    lo, hi = PARTS[part]
+    order = order[lo:min(hi, len(order))]
     for i in range(0, len(order) - batch_size + 1, batch_size):
         yield rows[order[i:i + batch_size]]
 

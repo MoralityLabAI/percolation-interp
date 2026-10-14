@@ -1,10 +1,12 @@
 """e04: dataset attributions for the Qwen slice with param-decomp's harvester, embedding excluded.
 
 Same as param_decomp.dataset_attributions.harvest.harvest_attributions, except:
-  - the embedding is not a source (the slice's input is the residual after 13 frozen
-    layers; vocabulary x components accumulators would also need ~9 GB);
+  - the embedding is not a source of components (the slice's input is the residual after
+    layers 0-1; vocabulary x components accumulators would also need ~9 GB);
   - alive masks come from e04_stats.py (CI > 0.1 on >= 1e-5 of held-out tokens) instead of a
-    harvest run.
+    harvest run;
+  - tokens are the "attributions" part of the held-out rows, disjoint from the rows the
+    causal test (e04_causal.py) measures on.
 
   python experiments/e04_attributions.py [--step N]
 Writes out/e04/dataset_attributions.pt (param-decomp's storage format).
@@ -17,7 +19,7 @@ import time
 
 import torch
 
-from e04_common import MIN_RATE, OUT, find_run, load_component_model, load_stats
+from e04_common import MIN_RATE, OUT, find_run, heldout_part, load_component_model, load_stats
 
 
 def main():
@@ -28,7 +30,6 @@ def main():
     ap.add_argument("--step", type=int, default=None)
     args = ap.parse_args()
 
-    from param_decomp.data import train_loader_and_tokenizer
     from param_decomp.dataset_attributions.harvester import AttributionHarvester
     from param_decomp.topology import TransformerTopology, get_sources_by_target
 
@@ -57,8 +58,7 @@ def main():
 
     harvester = AttributionHarvester(model=cm, topology=topology, sources_by_target=sources_by_target,
                                      component_alive=alive, sampling=run_info.config.sampling)
-    loader, _ = train_loader_and_tokenizer(run_info.config, args.batch)
-    it, t0 = iter(loader), time.time()
+    it, t0 = heldout_part(args.batch, "attributions"), time.time()
     for b in range(args.n_batches):
         harvester.process_batch(next(it).to(args.device))
         if (b + 1) % 25 == 0:
