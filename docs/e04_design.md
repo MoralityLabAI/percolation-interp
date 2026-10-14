@@ -69,6 +69,9 @@ scored.
 - Pass: the sieved set's KL is below all of 100 random sets matched per
   module in size and firing-rate decile (p < 0.01).
 
+Clarification, added before any e04 analysis: "the sieved components" in Q2 and Q3
+are the backbone of the within-layer sieve at its c*, as in e03's P4.
+
 **Q3: better than picking by importance.**
 - Pass: the sieved set's KL is below that of the same-size top-mean-CI set.
 
