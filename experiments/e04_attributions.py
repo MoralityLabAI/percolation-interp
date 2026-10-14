@@ -42,12 +42,16 @@ def main():
     unembed_path = topology.path_schema.unembed_path
     raw = get_sources_by_target(cm, topology, args.device, run_info.config.sampling)
     components = set(cm.target_module_paths)
+    embed_path = topology.path_schema.embedding_path
     sources_by_target = {}
     for target, sources in raw.items():
         if target not in components | {unembed_path}:
             continue
-        kept = [s for s in sources if s in components]  # embedding deliberately excluded
-        if kept:
+        # The embedding is excluded as a source of components (vocab x C accumulators, ~9 GB).
+        # The harvester requires it as a source of the output, where it only feeds the
+        # (d_model x vocab) straight-through term, ~0.6 GB.
+        kept = [s for s in sources if s in components or (target == unembed_path and s == embed_path)]
+        if any(s in components for s in kept):
             sources_by_target[target] = kept
     print(f"{len(sources_by_target)} targets with component sources", flush=True)
 

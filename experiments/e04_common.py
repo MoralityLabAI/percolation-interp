@@ -14,6 +14,7 @@ OUT = Path(os.environ.get("E04_OUT", ROOT / "out" / "e04"))
 PD_OUT = Path(os.environ.get("PARAM_DECOMP_OUT_DIR", Path.home() / "param_decomp_out"))
 MODEL = "Qwen/Qwen3-0.6B"
 STEPS = 20000
+SLICE = (2, 3)  # decomposed layers (revised from 13-14; docs/e04_design.md)
 MIN_RATE = 1e-5
 CI_FIRE = 0.1
 STAGE = {"attn.q": 0, "attn.k": 0, "attn.v": 0, "attn.o": 1, "glu.gate": 2, "glu.up": 2, "glu.down": 3}
@@ -23,14 +24,16 @@ def find_run(checkpoint_step: int | None = None) -> str:
     """Run id of the e04 decomposition, registered in the local runs cache.
 
     With checkpoint_step, registers a copy holding only that checkpoint (for testing on a
-    run that is still training) under the id '<run>-s<step>'.
+    run that is still training) and returns the path to that checkpoint, which
+    ParamDecompRunInfo.from_path accepts (a suffixed id would not parse as a run id).
     """
     for d in sorted((PD_OUT / "decompositions").glob("*")):
         cfg = d / "final_config.yaml"
         if not cfg.exists():
             continue
         text = cfg.read_text(encoding="utf-8")
-        if f"pretrained_model_name: {MODEL}" in text and re.search(rf"(?m)^steps: {STEPS}$", text):
+        if (f"pretrained_model_name: {MODEL}" in text and re.search(rf"(?m)^steps: {STEPS}$", text)
+                and all(f"model.layers.{l}." in text for l in SLICE)):
             step = checkpoint_step or STEPS
             ckpt = d / f"model_{step}.pth"
             assert ckpt.exists(), f"{ckpt} not found"
@@ -40,7 +43,7 @@ def find_run(checkpoint_step: int | None = None) -> str:
                 cache.mkdir(parents=True)
                 shutil.copyfile(cfg, cache / "final_config.yaml")
                 shutil.copyfile(ckpt, cache / ckpt.name)
-            return run_id
+            return run_id if checkpoint_step is None else str(cache / ckpt.name)
     raise SystemExit("no e04 decomposition found")
 
 
@@ -52,15 +55,36 @@ def load_component_model(run_id: str, device: str = "cuda"):
     return cm, run_info
 
 
-def heldout_loader(batch_size: int, seed: int, n_ctx: int = 128):
-    """Token batches (B, n_ctx) from the held-out 5% of pile-10k, Qwen tokenizer."""
-    from param_decomp.data import DatasetConfig, create_data_loader, input_ids_collate_fn
+def heldout_tokens(n_ctx: int = 128) -> torch.Tensor:
+    """The held-out 5% of pile-10k as (rows, n_ctx) Qwen token ids, built once and cached.
 
-    cfg = DatasetConfig(name="NeelNanda/pile-10k", is_tokenized=False, hf_tokenizer_path=MODEL, streaming=False,
-                        split="train[95%:]", n_ctx=n_ctx, seed=seed, column_name="text")
-    loader, _ = create_data_loader(cfg, batch_size=batch_size, buffer_size=1000, global_seed=seed,
-                                   collate_fn=input_ids_collate_fn)
-    return loader
+    Tokenised in a single process: datasets' multiprocess map loses workers on this split
+    (some Pile documents run to ~1M tokens). Documents are joined with EOS and cut into rows.
+    """
+    path = OUT.parent / "e04" / f"heldout_tokens_{n_ctx}.pt"
+    if path.exists():
+        return torch.load(path)
+    from datasets import load_dataset
+    from transformers import AutoTokenizer
+
+    tok = AutoTokenizer.from_pretrained(MODEL)
+    docs = load_dataset("NeelNanda/pile-10k", split="train[95%:]")["text"]
+    ids: list[int] = []
+    for text in docs:
+        ids.extend(tok(text)["input_ids"])
+        ids.append(tok.eos_token_id)
+    rows = torch.tensor(ids[: len(ids) // n_ctx * n_ctx]).view(-1, n_ctx)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    torch.save(rows, path)
+    return rows
+
+
+def heldout_loader(batch_size: int, seed: int, n_ctx: int = 128):
+    """Token batches (B, n_ctx) from the held-out 5% of pile-10k, in a seed-fixed row order."""
+    rows = heldout_tokens(n_ctx)
+    order = torch.randperm(len(rows), generator=torch.Generator().manual_seed(seed))
+    for i in range(0, len(order) - batch_size + 1, batch_size):
+        yield rows[order[i:i + batch_size]]
 
 
 def ci_lower(cm, run_info, idx):

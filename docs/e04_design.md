@@ -20,7 +20,7 @@ e04 tests whether those two results transfer to a real pretrained model.
 
 - **Model.** Qwen/Qwen3-0.6B from HuggingFace: 28 layers, d = 1024, GQA
   attention, SwiGLU MLP.
-- **VPD slice.** Layers 13 and 14, all seven projections each (q, k, v, o,
+- **VPD slice.** Layers 2 and 3 (revised from 13 and 14; see below), all seven projections each (q, k, v, o,
   gate, up, down). Everything else is frozen and undecomposed. Config:
   `configs/e04/vpd_qwen3_0.6b_L13-14.yaml`.
   - 7,680 components in total.
@@ -41,10 +41,48 @@ e04 tests whether those two results transfer to a real pretrained model.
 - **Nodes and edges.**
   - Nodes are the alive components: those with CI > 0.1 on at least 1 in
     10^5 held-out tokens.
-  - Sources are the layer-13 components that read the residual stream: q, k,
-    v, gate and up.
+  - Sources are the components of the slice's first layer that read the
+    residual stream: q, k, v, gate and up.
   - The sink is the output. Component → output edges are the norm of the
     component's effect in logit space.
+
+## Revision: slice moved to layers 2-3
+
+Made 2026-10-15, before any Q1-Q3 analysis of a trained decomposition.
+
+**What happened with layers 13-14:**
+- The first run trained to step 7,000 and then crashed (CUDA out of memory).
+  A pipeline test of mine ran alongside it on a nearly full card, which is the
+  likely cause.
+- Its evaluations by then showed that the slice barely matters to the model's
+  output. Zeroing all seven projections in both layers costs only KL ≈ 0.15
+  nats.
+- The CI-masked decomposition left 69-92% of that gap unrecovered, against the
+  quality gate of ≤ 10%. The gate looked unreachable, and Q2/Q3 would have
+  measured differences inside a 0.15-nat window.
+
+**New selection rule.** It uses only the target model, measured on held-out
+rows (`experiments/e04_layer_ablation.py`, `results/e04/layer_ablation.json`):
+decompose the deepest consecutive pair of layers whose zero-ablation costs at
+least 1 nat of KL.
+
+| Layer pair | Zero-ablation KL (nats) |
+|---|---|
+| 0-1 | 11.6 |
+| 1-2 | 7.5 |
+| 2-3 | 6.5 |
+| 3-4 | 0.91 |
+| 13-14 | 0.15 |
+| deeper pairs | 0.14-0.95 |
+
+Selected: **layers 2 and 3** (`configs/e04/vpd_qwen3_0.6b_L2-3.yaml`).
+Everything else is unchanged: C per projection, the loss recipe, data, steps,
+the gate, and Q1-Q3.
+
+**Disclosure.** Before this revision I saw the outputs of a pipeline smoke test
+on the 13-14 run's step-5,000 checkpoint: 2,048 attribution tokens, 5 shuffles
+and 3 random sets. Those were code checks, too small to bear on Q1-Q3. The
+revision rests on the decomposition-quality numbers above.
 
 ## Decomposition quality gate
 
