@@ -36,15 +36,25 @@ def run(stage, cmd, gpu=None):
         subprocess.run(cmd, cwd=ROOT, env=dict(os.environ), stdout=f, stderr=subprocess.STDOUT, check=True)
 
 
-def wait_until_complete(run_dir: Path, stall_minutes: int = 45):
-    """Block until the final checkpoint exists (the run trains in another process)."""
+def wait_until_complete(run_dir: Path, poll: int = 300, stall_polls: int = 9):
+    """Block until the final checkpoint exists (the run trains in another process).
+
+    Gives up after stall_polls consecutive polls (45 minutes) in which no file in the run's
+    folder changed. A gap between polls much longer than `poll` means the machine slept, and
+    the run was paused with it, so that gap does not count as a stall.
+    """
     final = run_dir / f"model_{STEPS}.pth"
+    last, stalled, t_prev = None, 0, time.time()
     while not final.exists():
-        age = time.time() - max(p.stat().st_mtime for p in [run_dir, *run_dir.iterdir()])
-        if age > 60 * stall_minutes:
-            raise RuntimeError(f"{run_dir.name} has not progressed for {age / 60:.0f} minutes")
-        print(f"{time.strftime('%H:%M')} waiting for {run_dir.name}", flush=True)
-        time.sleep(300)
+        newest = max(p.stat().st_mtime for p in [run_dir, *run_dir.iterdir()])
+        now = time.time()
+        slept = now - t_prev > 2 * poll
+        stalled = 0 if (slept or newest != last) else stalled + 1
+        last, t_prev = newest, now
+        if stalled >= stall_polls:
+            raise RuntimeError(f"{run_dir.name} has not progressed for {stalled * poll / 60:.0f} minutes")
+        print(f"{time.strftime('%H:%M')} waiting for {run_dir.name}{' (after a sleep)' if slept else ''}", flush=True)
+        time.sleep(poll)
     time.sleep(60)  # let the save finish
 
 

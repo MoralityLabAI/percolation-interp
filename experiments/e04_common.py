@@ -21,16 +21,23 @@ STAGE = {"attn.q": 0, "attn.k": 0, "attn.v": 0, "attn.o": 1, "glu.gate": 2, "glu
 
 
 def find_decomposition() -> Path | None:
-    """The e04 decomposition's folder, identified by model, steps and slice in its final_config.yaml."""
-    for d in sorted((PD_OUT / "decompositions").glob("*")):
+    """The e04 decomposition's folder, identified by model, steps and slice in its final_config.yaml.
+
+    A run that reached its final checkpoint wins; otherwise the newest (a run killed before
+    finishing, e.g. by a Windows Update restart, leaves a matching folder behind).
+    """
+    found = []
+    for d in (PD_OUT / "decompositions").glob("*"):
         cfg = d / "final_config.yaml"
         if not cfg.exists():
             continue
         text = cfg.read_text(encoding="utf-8")
         if (f"pretrained_model_name: {MODEL}" in text and re.search(rf"(?m)^steps: {STEPS}$", text)
                 and all(f"model.layers.{l}." in text for l in SLICE)):
-            return d
-    return None
+            found.append(d)
+    done = [d for d in found if (d / f"model_{STEPS}.pth").exists()]
+    pool = done or found
+    return max(pool, key=lambda d: (d / "final_config.yaml").stat().st_mtime) if pool else None
 
 
 def find_run(checkpoint_step: int | None = None) -> str:
