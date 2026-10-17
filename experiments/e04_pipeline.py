@@ -1,6 +1,9 @@
-"""e04 driver: wait for the decomposition, check the quality gate, then run Q1-Q3's stages.
+"""e04 driver: train the decomposition, check the quality gate, then run Q1-Q3's stages.
 
-Stages run in order, each GPU stage under its own vramorama lease, logging to
+Unattended: every GPU job runs under its own vramorama lease and a watchdog. A job whose log
+stops growing (a wedged CUDA context after a power flap did this once) or that exits with an
+error is stopped, process tree and all, and started again: the decomposition up to three
+times (from scratch: param-decomp cannot resume), each later stage twice. Logs go to
 out/e04/<stage>.log. A stage is skipped when its output already exists, so the driver can be
 rerun after an interruption. If the gate fails (docs/e04_design.md), the driver writes
 out/e04/gate.json and stops: Q1-Q3 are not scored.
@@ -18,44 +21,58 @@ import sys
 import time
 from pathlib import Path
 
-from e04_common import OUT, PD_OUT, ROOT, STEPS, find_decomposition
+from e04_common import OUT, ROOT, STEPS, find_decomposition
 
 VRAMORAMA = r"C:\Users\patri\AppData\Local\Programs\vramorama\vramorama.exe"
+PD = Path(r"C:\Users\patri\Documents\GitHub\MoralityLabAI\param-decomp")
 PD_PY = sys.executable  # param-decomp venv
 LOCAL_PY = str(ROOT / ".venv" / "Scripts" / "python.exe")  # analysis (numpy, CPU)
+CONFIG = ROOT / "configs" / "e04" / "vpd_qwen3_0.6b_L2-3.yaml"
 GATE = 0.10
 GATE_KEY = "ce_kl/ce_unrecovered_ci_masked"
 
 
-def run(stage, cmd, gpu=None):
-    log = OUT / f"{stage}.log"
-    if gpu:
-        cmd = [VRAMORAMA, "run", "--vram", gpu, "--owner", f"e04-{stage}", "--"] + cmd
-    print(f"[{stage}] {' '.join(cmd)}", flush=True)
-    with open(log, "w", encoding="utf-8") as f:
-        subprocess.run(cmd, cwd=ROOT, env=dict(os.environ), stdout=f, stderr=subprocess.STDOUT, check=True)
+def log(msg):
+    print(f"{time.strftime('%m-%d %H:%M')} {msg}", flush=True)
 
 
-def wait_until_complete(run_dir: Path, poll: int = 300, stall_polls: int = 9):
-    """Block until the final checkpoint exists (the run trains in another process).
+def kill_tree(pid):
+    subprocess.run(["taskkill", "/T", "/F", "/PID", str(pid)], capture_output=True)
 
-    Gives up after stall_polls consecutive polls (45 minutes) in which no file in the run's
-    folder changed. A gap between polls much longer than `poll` means the machine slept, and
-    the run was paused with it, so that gap does not count as a stall.
+
+def watched(stage, cmd, gpu, stall_minutes, attempts, poll=30):
+    """Run cmd under a vramorama lease, restarting it if its log stalls or it fails.
+
+    The stall clock starts once the lease is admitted (waiting in the queue is not a stall)
+    and ignores gaps between polls much longer than `poll` (the machine slept).
     """
-    final = run_dir / f"model_{STEPS}.pth"
-    last, stalled, t_prev = None, 0, time.time()
-    while not final.exists():
-        newest = max(p.stat().st_mtime for p in [run_dir, *run_dir.iterdir()])
-        now = time.time()
-        slept = now - t_prev > 2 * poll
-        stalled = 0 if (slept or newest != last) else stalled + 1
-        last, t_prev = newest, now
-        if stalled >= stall_polls:
-            raise RuntimeError(f"{run_dir.name} has not progressed for {stalled * poll / 60:.0f} minutes")
-        print(f"{time.strftime('%H:%M')} waiting for {run_dir.name}{' (after a sleep)' if slept else ''}", flush=True)
-        time.sleep(poll)
-    time.sleep(60)  # let the save finish
+    for attempt in range(1, attempts + 1):
+        path = OUT / (f"{stage}.log" if attempt == 1 else f"{stage}_attempt{attempt}.log")
+        full = [VRAMORAMA, "run", "--vram", gpu, "--owner", f"e04-{stage}", "--"] + cmd if gpu else cmd
+        log(f"[{stage}] attempt {attempt}: {' '.join(full)}")
+        with open(path, "w", encoding="utf-8") as f:
+            proc = subprocess.Popen(full, cwd=ROOT, env=dict(os.environ), stdout=f, stderr=subprocess.STDOUT)
+            size, quiet, t_prev = -1, 0.0, time.time()
+            while proc.poll() is None:
+                time.sleep(poll)
+                now = time.time()
+                text = path.read_text(encoding="utf-8", errors="replace")
+                admitted = gpu is None or "admitted" in text
+                if now - t_prev > 4 * poll or not admitted or path.stat().st_size != size:
+                    quiet = 0.0
+                else:
+                    quiet += now - t_prev
+                size, t_prev = path.stat().st_size, now
+                if quiet > 60 * stall_minutes:
+                    log(f"[{stage}] no output for {quiet / 60:.0f} minutes: stopping it")
+                    kill_tree(proc.pid)
+                    proc.wait()
+                    break
+        if proc.returncode == 0:
+            log(f"[{stage}] done")
+            return
+        log(f"[{stage}] attempt {attempt} ended with code {proc.returncode}")
+    raise RuntimeError(f"{stage} failed after {attempts} attempts")
 
 
 def gate(run_dir: Path) -> dict:
@@ -71,26 +88,37 @@ def gate(run_dir: Path) -> dict:
     return res
 
 
+def finished() -> Path | None:
+    d = find_decomposition()
+    return d if d is not None and (d / f"model_{STEPS}.pth").exists() else None
+
+
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
-    run_dir = find_decomposition()
-    assert run_dir is not None, f"no e04 decomposition under {PD_OUT}"
-    wait_until_complete(run_dir)
+    if finished() is None:
+        watched("vpd_L2-3", [PD_PY, "-u", str(PD / "param_decomp" / "experiments" / "lm" / "lm_decomposition.py"),
+                        str(CONFIG)], "12G", stall_minutes=20, attempts=3)
+        time.sleep(30)
+    run_dir = finished()
+    assert run_dir is not None, "the decomposition finished but its final checkpoint is missing"
     g = gate(run_dir)
-    print(f"gate: {GATE_KEY} {g[GATE_KEY]:.4f} (threshold {GATE}): {'pass' if g['pass'] else 'FAIL'}", flush=True)
+    log(f"gate ({run_dir.name}): {GATE_KEY} {g[GATE_KEY]:.4f} (threshold {GATE}): {'pass' if g['pass'] else 'FAIL'}")
     if not g["pass"]:
-        print("gate failed: Q1-Q3 are not scored", flush=True)
+        log("gate failed: Q1-Q3 are not scored")
         return
     exp = str(ROOT / "experiments")
     if not (OUT / "stats.pt").exists():
-        run("stats", [PD_PY, "-u", f"{exp}/e04_stats.py"], "5G")
+        watched("stats", [PD_PY, "-u", f"{exp}/e04_stats.py"], "4G", stall_minutes=30, attempts=2)
     if not (OUT / "dataset_attributions.pt").exists():
-        run("attributions", [PD_PY, "-u", f"{exp}/e04_attributions.py"], "8G")
+        # The same 800 held-out rows as 200 batches of 4, in 1/3 of the time; peaks at 12.6 GB.
+        watched("attributions", [PD_PY, "-u", f"{exp}/e04_attributions.py", "--batch", "16", "--n-batches", "50"],
+                "13G", stall_minutes=30, attempts=2)
     if not (OUT / "analysis.json").exists():
-        run("analyze", [LOCAL_PY, "-u", f"{exp}/e04_analyze.py", "--n-shuffles", "100"])
+        watched("analyze", [LOCAL_PY, "-u", f"{exp}/e04_analyze.py", "--n-shuffles", "100"], None,
+                stall_minutes=24 * 60, attempts=1)
     if not (OUT / "causal.json").exists():
-        run("causal", [PD_PY, "-u", f"{exp}/e04_causal.py"], "5G")
-    print("e04: all stages done", flush=True)
+        watched("causal", [PD_PY, "-u", f"{exp}/e04_causal.py"], "4G", stall_minutes=30, attempts=2)
+    log("e04: all stages done")
 
 
 if __name__ == "__main__":

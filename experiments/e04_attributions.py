@@ -61,8 +61,7 @@ def main():
     it, t0 = heldout_part(args.batch, "attributions"), time.time()
     for b in range(args.n_batches):
         harvester.process_batch(next(it).to(args.device))
-        if (b + 1) % 25 == 0:
-            print(f"batch {b + 1}/{args.n_batches}: {time.time() - t0:.0f}s", flush=True)
+        print(f"batch {b + 1}/{args.n_batches}: {time.time() - t0:.0f}s", flush=True)  # the driver's watchdog reads this
     storage = harvester.finalize(0.0)
     OUT.mkdir(parents=True, exist_ok=True)
     storage.save(OUT / "dataset_attributions.pt")
