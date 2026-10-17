@@ -14,6 +14,7 @@ out/e04/gate.json and stops: Q1-Q3 are not scored.
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import subprocess
@@ -21,7 +22,18 @@ import sys
 import time
 from pathlib import Path
 
-from e04_common import OUT, ROOT, STEPS, find_decomposition
+if __name__ == "__main__":
+    # --seed / --steps / --out / --config set E04_SEED / E04_STEPS / E04_OUT / E04_CONFIG before
+    # e04_common reads them. A detached launch (vramorama --detach, via WMI) does not inherit the
+    # caller's environment; the stages below inherit this process's.
+    _ap = argparse.ArgumentParser()
+    for _flag in ("seed", "steps", "out", "config"):
+        _ap.add_argument(f"--{_flag}")
+    for _flag, _value in vars(_ap.parse_args()).items():
+        if _value is not None:
+            os.environ[f"E04_{_flag.upper()}"] = _value
+
+from e04_common import OUT, ROOT, STEPS, find_decomposition  # noqa: E402
 
 VRAMORAMA = r"C:\Users\patri\AppData\Local\Programs\vramorama\vramorama.exe"
 PD = Path(r"C:\Users\patri\Documents\GitHub\MoralityLabAI\param-decomp")
