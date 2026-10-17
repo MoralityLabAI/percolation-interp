@@ -95,7 +95,7 @@ scored.
 
 ### Addendum: what follows each gate outcome
 
-Written 2026-10-18 at 01:20. The third layers 2-3 run (p-1ae4ebad) had started
+Written 2026-10-18 at 01:11. The third layers 2-3 run (p-1ae4ebad) had started
 training at 01:10, and none of its evaluations had been read.
 
 **Background.** The first run was killed by a Windows Update restart at step
