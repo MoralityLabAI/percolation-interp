@@ -10,9 +10,11 @@ three questions:
 - `docs/plan.md`: the research plan, with predictions written before running
 - `docs/literature.md`: prior-art check (October 2026)
 - `docs/e01_controls.md`: step 1 results (control pipeline)
-- `docs/e02_deep_mlp.md`: step 2 results so far (grokking in deep MLPs; depth 2 done)
+- `docs/e02_deep_mlp.md`: step 2 results (grokking in deep MLPs, depths 2, 4 and 8)
 - `docs/e03_design.md`: e03 design, the percolation sieve over a full VPD and an SAE tower
 - `docs/e03_results.md`: e03 results (P1 passes for VPD and fails for the SAE graph; P2 fails; P3 passes)
+- `docs/e04_design.md`: e04 design, the sieve on a VPD of Qwen3-0.6B layers 2-3
+- `docs/e04_results.md`: e04 results (gate passes; Q1 fails on the in-strength control by one shuffle; Q2 and Q3 pass)
 
 ## Install
 

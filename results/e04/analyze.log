@@ -1,0 +1,3 @@
+graph: 600 nodes, 57967 edges, 180 sources; alive per module {'2.attn.k': 20, '2.attn.q': 2, '2.attn.v': 40, '2.attn.o': 26, '2.glu.gate': 63, '2.glu.up': 55, '2.glu.down': 112, '3.attn.k': 31, '3.attn.q': 6, '3.attn.v': 24, '3.attn.o': 15, '3.glu.gate': 57, '3.glu.up': 83, '3.glu.down': 65}
+within_layer: z_peak 4.2 (shuffle max 3.7), p 0.010, c* 0.075, learned +0.010, backbone 13 nodes
+in_strength: z_peak 4.5 (shuffle max 7.3), p 0.020, c* 0.075, learned +0.011, backbone 13 nodes

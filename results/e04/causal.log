@@ -1,0 +1,11 @@
+vramorama: lease 517d48c1 waits for 4,096 MiB on NVIDIA GeForce RTX 5080 Laptop GPU: 15,403 MiB free; confirming it stays free and stops growing for 15s
+vramorama: lease 517d48c1 waits for 4,096 MiB on NVIDIA GeForce RTX 5080 Laptop GPU: 15,399 MiB free; confirming it stays free and stops growing for 15s
+vramorama: lease 517d48c1 waits for 4,096 MiB on NVIDIA GeForce RTX 5080 Laptop GPU: 15,403 MiB free; confirming it stays free and stops growing for 15s
+vramorama: lease 517d48c1 waits for 4,096 MiB on NVIDIA GeForce RTX 5080 Laptop GPU: 15,399 MiB free; confirming it stays free and stops growing for 15s
+vramorama: lease 517d48c1 admitted after 19s; starting C:\Users\patri\Documents\GitHub\MoralityLabAI\param-decomp\.venv\Scripts\python.exe -u C:\Users\patri\Documents\GitHub\MoralityLabAI\percolation-interp\experiments/e04_causal.py
+Loading run from C:\Users\patri\param_decomp_out\runs\param-decomp-p-1ae4ebad
+batch 8/32: 68s
+batch 16/32: 135s
+batch 24/32: 202s
+batch 32/32: 270s
+backbone KL 6.3170 vs random median 6.6560 (min 6.4133), p 0.010; top-CI 6.3978; all 0.7103; none 6.6642

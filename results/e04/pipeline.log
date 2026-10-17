@@ -1,0 +1,12 @@
+10-18 01:10 [vpd_L2-3] attempt 1: C:\Users\patri\AppData\Local\Programs\vramorama\vramorama.exe run --vram 12G --owner e04-vpd_L2-3 -- C:\Users\patri\Documents\GitHub\MoralityLabAI\param-decomp\.venv\Scripts\python.exe -u C:\Users\patri\Documents\GitHub\MoralityLabAI\param-decomp\param_decomp\experiments\lm\lm_decomposition.py C:\Users\patri\Documents\GitHub\MoralityLabAI\percolation-interp\configs\e04\vpd_qwen3_0.6b_L2-3.yaml
+10-18 04:37 [vpd_L2-3] done
+10-18 04:37 gate (p-1ae4ebad): ce_kl/ce_unrecovered_ci_masked 0.0774 (threshold 0.1): pass
+10-18 04:37 [stats] attempt 1: C:\Users\patri\AppData\Local\Programs\vramorama\vramorama.exe run --vram 4G --owner e04-stats -- C:\Users\patri\Documents\GitHub\MoralityLabAI\param-decomp\.venv\Scripts\python.exe -u C:\Users\patri\Documents\GitHub\MoralityLabAI\percolation-interp\experiments/e04_stats.py
+10-18 04:39 [stats] done
+10-18 04:39 [attributions] attempt 1: C:\Users\patri\AppData\Local\Programs\vramorama\vramorama.exe run --vram 13G --owner e04-attributions -- C:\Users\patri\Documents\GitHub\MoralityLabAI\param-decomp\.venv\Scripts\python.exe -u C:\Users\patri\Documents\GitHub\MoralityLabAI\percolation-interp\experiments/e04_attributions.py --batch 16 --n-batches 50
+10-18 06:25 [attributions] done
+10-18 06:25 [analyze] attempt 1: C:\Users\patri\Documents\GitHub\MoralityLabAI\percolation-interp\.venv\Scripts\python.exe -u C:\Users\patri\Documents\GitHub\MoralityLabAI\percolation-interp\experiments/e04_analyze.py --n-shuffles 100
+10-18 06:26 [analyze] done
+10-18 06:26 [causal] attempt 1: C:\Users\patri\AppData\Local\Programs\vramorama\vramorama.exe run --vram 4G --owner e04-causal -- C:\Users\patri\Documents\GitHub\MoralityLabAI\param-decomp\.venv\Scripts\python.exe -u C:\Users\patri\Documents\GitHub\MoralityLabAI\percolation-interp\experiments/e04_causal.py
+10-18 06:31 [causal] done
+10-18 06:31 e04: all stages done

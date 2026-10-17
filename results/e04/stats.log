@@ -1,0 +1,11 @@
+vramorama: lease f113a325 waits for 4,096 MiB on NVIDIA GeForce RTX 5080 Laptop GPU: 15,403 MiB free; confirming it stays free and stops growing for 15s
+vramorama: lease f113a325 waits for 4,096 MiB on NVIDIA GeForce RTX 5080 Laptop GPU: 15,399 MiB free; confirming it stays free and stops growing for 15s
+vramorama: lease f113a325 waits for 4,096 MiB on NVIDIA GeForce RTX 5080 Laptop GPU: 15,403 MiB free; confirming it stays free and stops growing for 15s
+vramorama: lease f113a325 waits for 4,096 MiB on NVIDIA GeForce RTX 5080 Laptop GPU: 15,399 MiB free; confirming it stays free and stops growing for 15s
+vramorama: lease f113a325 admitted after 18s; starting C:\Users\patri\Documents\GitHub\MoralityLabAI\param-decomp\.venv\Scripts\python.exe -u C:\Users\patri\Documents\GitHub\MoralityLabAI\percolation-interp\experiments/e04_stats.py
+Loading run from C:\Users\patri\param_decomp_out\runs\param-decomp-p-1ae4ebad
+batch 50: 25600 tokens, 5s
+batch 100: 51200 tokens, 9s
+batch 150: 76800 tokens, 13s
+batch 200: 102400 tokens, 16s
+run p-1ae4ebad: 102400 tokens; alive components 599/7680

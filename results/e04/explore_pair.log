@@ -1,0 +1,14 @@
+vramorama: lease 46a47eb4 waits for 4,096 MiB on NVIDIA GeForce RTX 5080 Laptop GPU: 15,399 MiB free; confirming it stays free and stops growing for 15s
+vramorama: lease 46a47eb4 waits for 4,096 MiB on NVIDIA GeForce RTX 5080 Laptop GPU: 15,403 MiB free; confirming it stays free and stops growing for 15s
+vramorama: lease 46a47eb4 waits for 4,096 MiB on NVIDIA GeForce RTX 5080 Laptop GPU: 15,399 MiB free; confirming it stays free and stops growing for 15s
+vramorama: lease 46a47eb4 admitted after 15s; starting C:/Users/patri/Documents/GitHub/MoralityLabAI/param-decomp/.venv/Scripts/python.exe -u experiments/e04_explore_pair.py
+Loading run from C:\Users\patri\param_decomp_out\runs\param-decomp-p-1ae4ebad
+pair                   KL 6.4258  share of gap 4.004%
+v_only                 KL 6.6642  share of gap 0.000%
+o_only                 KL 6.6642  share of gap 0.000%
+backbone               KL 6.3170  share of gap 5.831%
+backbone_minus_pair    KL 6.6327  share of gap 0.529%
+top_ci                 KL 6.3978  share of gap 4.475%
+top_ci_minus_pair      KL 6.6355  share of gap 0.482%
+none                   KL 6.6642  share of gap 0.000%
+all                    KL 0.7103  share of gap 100.000%

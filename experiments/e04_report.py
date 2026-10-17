@@ -72,17 +72,28 @@ def fig_sieve(r, path):
 
 
 def fig_causal(c, path):
-    fig, ax = plt.subplots(figsize=(6.8, 3.4))
-    ax.hist(c["random"], bins=20, color=plotstyle.MUTED, alpha=0.6, label="matched random sets")
-    ax.axvline(c["backbone"], color=plotstyle.SERIES[0], lw=2, label="sieved backbone")
-    for k, (name, key) in enumerate([("top mean-CI set", "top_ci"), ("all components", "all"), ("none", "none")]):
-        ax.axvline(c[key], color=plotstyle.SERIES[1 + k] if key != "none" else plotstyle.INK_2, lw=1.2, ls="--",
-                   label=name)
-    ax.set_xscale("log")
-    ax.set_xlabel("KL(target || restricted), nats/token")
+    """Share of the KL gap closed, (KL_none - KL_set) / (KL_none - KL_all): 0 = no components, 1 = all."""
+    gap = c["none"] - c["all"]
+    share = lambda kl: (c["none"] - np.asarray(kl)) / gap  # noqa: E731
+    rand = share(c["random"])
+    rng = np.random.default_rng(0)
+    fig, ax = plt.subplots(figsize=(6.8, 2.6))
+    ax.scatter(rand, rng.uniform(-0.25, 0.25, len(rand)), s=14, color=plotstyle.MUTED, alpha=0.7, lw=0,
+               label=f"{len(rand)} random sets, matched per module in size and firing-rate decile")
+    for v, name, color in [(share(c["backbone"]), "sieved backbone", plotstyle.SERIES[0]),
+                           (share(c["top_ci"]), "same-size top mean-CI set", plotstyle.SERIES[1])]:
+        ax.plot([v], [0], "D", color=color, markersize=9, markeredgecolor="white", markeredgewidth=1.5)
+        ax.annotate(f"{name}\n{v:.1%}", (v, 0), xytext=(0, 18), textcoords="offset points", ha="center",
+                    fontsize=8, color=plotstyle.INK)
+    ax.axvline(0, color=plotstyle.BASELINE, lw=0.8)
+    ax.set_ylim(-0.6, 1.0)
+    ax.set_yticks([])
     ax.grid(axis="y", visible=False)
-    ax.legend(loc="upper left", fontsize=7)
-    ax.set_title(f"Keep only the sieved components: p {c['p_value']:.3f} against matched random sets", fontsize=9)
+    ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f"{x:.0%}"))
+    ax.set_xlabel("share of the KL gap closed (no components = 0%; all components = 100%, off scale)")
+    ax.legend(loc="lower right", fontsize=7, frameon=False)
+    ax.set_title(f"Keeping only the {sum(c['backbone_size'].values())} sieved components beats every matched "
+                 f"random set (p {c['p_value']:.2f})", fontsize=9, loc="left")
     fig.tight_layout()
     fig.savefig(path)
     plt.close(fig)

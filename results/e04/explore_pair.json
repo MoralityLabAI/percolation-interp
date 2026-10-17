@@ -1,0 +1,36 @@
+{
+ "run_id": "p-1ae4ebad",
+ "kl": {
+  "pair": 6.425794631242752,
+  "v_only": 6.664207637310028,
+  "o_only": 6.664207637310028,
+  "backbone": 6.317008763551712,
+  "backbone_minus_pair": 6.632713630795479,
+  "top_ci": 6.397751912474632,
+  "top_ci_minus_pair": 6.635514289140701,
+  "none": 6.664207637310028,
+  "all": 0.7102617081254721
+ },
+ "share_of_gap": {
+  "pair": 0.0400428571073585,
+  "v_only": 0.0,
+  "o_only": 0.0,
+  "backbone": 0.05831407908097477,
+  "backbone_minus_pair": 0.00528960237280197,
+  "top_ci": 0.044752795541744064,
+  "top_ci_minus_pair": 0.004819215443103055,
+  "none": 0.0,
+  "all": 1.0
+ },
+ "sizes": {
+  "pair": 2,
+  "v_only": 1,
+  "o_only": 1,
+  "backbone": 12,
+  "backbone_minus_pair": 10,
+  "top_ci": 12,
+  "top_ci_minus_pair": 10,
+  "none": 0
+ },
+ "tokens": 16384
+}
