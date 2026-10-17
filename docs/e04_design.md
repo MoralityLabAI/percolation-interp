@@ -93,6 +93,34 @@ The decomposition is interpreted only if the CI-masked model leaves at most
 toy run left 1.3%. If the gate fails, the result is reported and Q1-Q3 are not
 scored.
 
+### Addendum: what follows each gate outcome
+
+Written 2026-10-18 at 01:20. The third layers 2-3 run (p-1ae4ebad) had started
+training at 01:10, and none of its evaluations had been read.
+
+**Background.** The first run was killed by a Windows Update restart at step
+3,689. The second (p-d8e53aab) hung at step 19,795 after a power flap. I read
+the second run's gate metric while deciding whether to retrain:
+- it stayed between 0.07 and 0.105 from step 6,000 on;
+- it was 0.096 at step 19,000.
+
+So the gate may go either way. These contingencies are fixed before the
+outcome is known:
+
+- **Gate passes.** Q1-Q3 are scored as planned. A replication follows with
+  decomposition seed 1, everything else unchanged.
+  - It is scored by the same gate and the same Q1-Q3 rules (R-Q1 to R-Q3).
+  - It runs when the GPU is available. The card is shared, so the user decides
+    when.
+- **Gate fails.** Q1-Q3 are not scored on this run, as stated above.
+  - e04b retrains with 40,000 steps, the length of e03's decompositions, all
+    else unchanged.
+  - The same gate applies. If e04b passes, Q1-Q3 are scored on it, still
+    confirmatory, since no Q1-Q3 quantity of any layers 2-3 run will have been
+    seen.
+  - If e04b also fails, e04 reports that VPD at this budget does not decompose
+    the slice well enough to test transfer.
+
 ## Predictions
 
 **Q1: connected structure.**

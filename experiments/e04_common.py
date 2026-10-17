@@ -13,7 +13,10 @@ ROOT = Path(__file__).resolve().parents[1]
 OUT = Path(os.environ.get("E04_OUT", ROOT / "out" / "e04"))
 PD_OUT = Path(os.environ.get("PARAM_DECOMP_OUT_DIR", Path.home() / "param_decomp_out"))
 MODEL = "Qwen/Qwen3-0.6B"
-STEPS = 20000
+# The main run is seed 0 at 20k steps; the follow-ups (docs/e04_design.md, gate addendum) set
+# E04_STEPS=40000 (e04b) or E04_SEED=1 (replication), with their own E04_OUT.
+STEPS = int(os.environ.get("E04_STEPS", 20000))
+SEED = int(os.environ.get("E04_SEED", 0))
 SLICE = (2, 3)  # decomposed layers (revised from 13-14; docs/e04_design.md)
 MIN_RATE = 1e-5
 CI_FIRE = 0.1
@@ -33,7 +36,7 @@ def find_decomposition() -> Path | None:
             continue
         text = cfg.read_text(encoding="utf-8")
         if (f"pretrained_model_name: {MODEL}" in text and re.search(rf"(?m)^steps: {STEPS}$", text)
-                and all(f"model.layers.{l}." in text for l in SLICE)):
+                and re.search(rf"(?m)^seed: {SEED}$", text) and all(f"model.layers.{l}." in text for l in SLICE)):
             found.append(d)
     done = [d for d in found if (d / f"model_{STEPS}.pth").exists()]
     pool = done or found

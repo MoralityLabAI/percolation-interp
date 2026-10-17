@@ -27,7 +27,7 @@ VRAMORAMA = r"C:\Users\patri\AppData\Local\Programs\vramorama\vramorama.exe"
 PD = Path(r"C:\Users\patri\Documents\GitHub\MoralityLabAI\param-decomp")
 PD_PY = sys.executable  # param-decomp venv
 LOCAL_PY = str(ROOT / ".venv" / "Scripts" / "python.exe")  # analysis (numpy, CPU)
-CONFIG = ROOT / "configs" / "e04" / "vpd_qwen3_0.6b_L2-3.yaml"
+CONFIG = Path(os.environ.get("E04_CONFIG", ROOT / "configs" / "e04" / "vpd_qwen3_0.6b_L2-3.yaml"))
 GATE = 0.10
 GATE_KEY = "ce_kl/ce_unrecovered_ci_masked"
 
