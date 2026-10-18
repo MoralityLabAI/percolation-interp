@@ -14,7 +14,7 @@ three questions:
 - `docs/e03_design.md`: e03 design, the percolation sieve over a full VPD and an SAE tower
 - `docs/e03_results.md`: e03 results (P1 passes for VPD and fails for the SAE graph; P2 fails; P3 passes)
 - `docs/e04_design.md`: e04 design, the sieve on a VPD of Qwen3-0.6B layers 2-3
-- `docs/e04_results.md`: e04 results (gate passes; Q1 fails on the in-strength control by one shuffle; Q2 and Q3 pass)
+- `docs/e04_results.md`: e04 results, two seeds (gate passes; Q1 fails in both; Q2 and Q3 pass, carried by one attention pair)
 
 ## Install
 

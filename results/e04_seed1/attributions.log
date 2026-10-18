@@ -1,0 +1,59 @@
+vramorama: lease b8a152a1 waits for 13,312 MiB on NVIDIA GeForce RTX 5080 Laptop GPU: 15,403 MiB free; confirming it stays free and stops growing for 15s
+vramorama: lease b8a152a1 waits for 13,312 MiB on NVIDIA GeForce RTX 5080 Laptop GPU: 15,399 MiB free; confirming it stays free and stops growing for 15s
+vramorama: lease b8a152a1 waits for 13,312 MiB on NVIDIA GeForce RTX 5080 Laptop GPU: 15,403 MiB free; confirming it stays free and stops growing for 15s
+vramorama: lease b8a152a1 waits for 13,312 MiB on NVIDIA GeForce RTX 5080 Laptop GPU: 15,399 MiB free; confirming it stays free and stops growing for 15s
+vramorama: lease b8a152a1 admitted after 18s; starting C:\Users\patri\Documents\GitHub\MoralityLabAI\param-decomp\.venv\Scripts\python.exe -u C:\Users\patri\Documents\GitHub\MoralityLabAI\percolation-interp\experiments/e04_attributions.py --batch 16 --n-batches 50
+Loading run from C:\Users\patri\param_decomp_out\runs\param-decomp-p-542cdc24
+12 targets with component sources
+batch 1/50: 124s
+batch 2/50: 249s
+batch 3/50: 376s
+batch 4/50: 506s
+batch 5/50: 1636s
+batch 6/50: 2655s
+batch 7/50: 2804s
+batch 8/50: 2929s
+batch 9/50: 3056s
+batch 10/50: 3182s
+batch 11/50: 3308s
+batch 12/50: 3434s
+batch 13/50: 3630s
+batch 14/50: 3754s
+batch 15/50: 3880s
+batch 16/50: 4006s
+batch 17/50: 4141s
+batch 18/50: 4352s
+batch 19/50: 4484s
+batch 20/50: 4666s
+batch 21/50: 4826s
+batch 22/50: 4993s
+batch 23/50: 5159s
+batch 24/50: 5326s
+batch 25/50: 5496s
+batch 26/50: 5662s
+batch 27/50: 5827s
+batch 28/50: 5990s
+batch 29/50: 6154s
+batch 30/50: 6319s
+batch 31/50: 6482s
+batch 32/50: 6647s
+batch 33/50: 6820s
+batch 34/50: 7009s
+batch 35/50: 7197s
+batch 36/50: 7383s
+batch 37/50: 7575s
+batch 38/50: 7750s
+batch 39/50: 7917s
+batch 40/50: 8089s
+batch 41/50: 8264s
+batch 42/50: 8440s
+batch 43/50: 8580s
+batch 44/50: 8714s
+batch 45/50: 8847s
+batch 46/50: 9000s
+batch 47/50: 9177s
+batch 48/50: 9352s
+batch 49/50: 9528s
+batch 50/50: 9659s
+Saved dataset attributions to C:\Users\patri\Documents\GitHub\MoralityLabAI\percolation-interp\out\e04_seed1\dataset_attributions.pt (1261.8 MB)
+saved; 102400 tokens

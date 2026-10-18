@@ -5,12 +5,14 @@ L2 o[335] (a value and an output direction of the same attention layer); sets wi
 stay near 0%. This measures the same restriction as e04_causal.py, on the same held-out rows,
 for the pair, each half, the backbone without the pair, and the top-CI set without the pair.
 
-  python experiments/e04_explore_pair.py
-Writes out/e04/explore_pair.json.
+  python experiments/e04_explore_pair.py [--v 187 --o 335]
+(seed 1's pair: --v 182 --o 59, with E04_OUT=out/e04_seed1 E04_SEED=1)
+Writes <E04_OUT>/explore_pair.json.
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 
 import torch
@@ -18,10 +20,9 @@ import torch.nn.functional as F
 
 from e04_common import OUT, ci_lower, find_run, heldout_part, load_component_model, load_stats
 
-V, O = ("model.layers.2.self_attn.v_proj", 187), ("model.layers.2.self_attn.o_proj", 335)
 
-
-def main(n_batches: int = 32, batch: int = 4, dev: str = "cuda"):
+def main(v_idx: int, o_idx: int, n_batches: int = 32, batch: int = 4, dev: str = "cuda"):
+    V, O = ("model.layers.2.self_attn.v_proj", v_idx), ("model.layers.2.self_attn.o_proj", o_idx)
     from param_decomp.models.components import make_mask_infos
 
     run_id = find_run()
@@ -57,12 +58,17 @@ def main(n_batches: int = 32, batch: int = 4, dev: str = "cuda"):
                 logp = F.log_softmax(cm(idx, mask_infos=mi).float(), -1)
                 kl[k] += (target.exp() * (target - logp)).sum(-1).mean().item() / n_batches
     gap = kl["none"] - kl["all"]
-    res = {"run_id": run_id, "kl": kl, "share_of_gap": {k: (kl["none"] - v) / gap for k, v in kl.items()},
+    res = {"run_id": run_id, "pair": [list(V), list(O)], "kl": kl,
+           "share_of_gap": {k: (kl["none"] - x) / gap for k, x in kl.items()},
            "sizes": {k: len(S) for k, S in sets.items()}, "tokens": n_batches * batch * 128}
     (OUT / "explore_pair.json").write_text(json.dumps(res, indent=1))
-    for k, v in res["share_of_gap"].items():
-        print(f"{k:22s} KL {kl[k]:.4f}  share of gap {v:.3%}")
+    for k, x in res["share_of_gap"].items():
+        print(f"{k:22s} KL {kl[k]:.4f}  share of gap {x:.3%}")
 
 
 if __name__ == "__main__":
-    main()
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--v", type=int, default=187)
+    ap.add_argument("--o", type=int, default=335)
+    args = ap.parse_args()
+    main(args.v, args.o)

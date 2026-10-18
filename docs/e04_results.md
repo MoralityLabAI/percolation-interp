@@ -7,25 +7,41 @@ existed. Run 2026-10-18.
 
 ## Verdict
 
-**Not transfer, by the pre-registered rule.**
+**Not transfer, in either seed.**
 
-| Test | Result | Pre-registered rule | Verdict |
-|---|---|---|---|
-| Quality gate | 7.7% of the gap unrecovered | at most 10% | pass |
-| Q1, within-layer shuffles | peak z 4.2; the shuffles' own peaks reach at most 3.7 (p = 0.01) | beats all 100 | pass |
-| Q1, in-strength-preserving shuffles | peak z 4.5; one shuffle of 100 reaches 7.3 (p = 0.02) | beats all 100 | **fail** |
-| Q2, backbone vs matched random sets | KL 6.32; random sets 6.41 at best, median 6.66 (p = 0.01) | below all 100 | pass |
-| Q3, backbone vs top mean-CI set | KL 6.32 vs 6.40 | below | pass |
+- The decomposition passes its quality gate in both seeds.
+- Q1, the connectivity test, fails in both.
+- Q2 and Q3 pass in both. But in each seed one layer-2 attention pair carries
+  nearly all of the backbone's effect, and in seed 1 both passes come down to
+  0.002 nats.
 
-- **Q1 fails, narrowly.** It needed both controls, and the in-strength control
-  lost by one outlying shuffle. The next-highest shuffle peak is 3.93.
+| Test (rule) | Seed 0, `p-1ae4ebad` | Seed 1, `p-542cdc24` (pre-registered replication) |
+|---|---|---|
+| Quality gate (at most 10% of the gap unrecovered) | 7.7%: pass | 8.3%: pass |
+| Q1, within-layer shuffles (beat all 100) | peak z 4.2, shuffles at most 3.7: pass | peak z 3.0, 6 shuffles at or above it, max 4.8 (p = 0.07): **fail** |
+| Q1, in-strength shuffles (beat all 100) | peak z 4.5, 1 shuffle above it at 7.3 (p = 0.02): **fail** | peak z 3.2, 3 shuffles at or above it, max 4.5 (p = 0.04): **fail** |
+| Q2, KL below all 100 matched random sets | 6.32 vs best 6.41: pass | 6.433 vs best 6.435: pass |
+| Q3, KL below the same-size top mean-CI set | 6.32 vs 6.40: pass | 6.433 vs 6.435: pass |
+
+- **Q1 fails in both seeds.** Seed 0 missed one control by a single outlying
+  shuffle. Seed 1 misses both controls clearly, so seed 0's within-layer pass
+  did not replicate.
 - **The design named "transfer" (all pass) and "partial" (Q1 passes, Q2 or Q3
-  fails).** This run is neither: the connectivity test fails while the causal
-  tests pass.
-- **The structure the sieve finds is small and weak.** It is 12 components, 2%
-  of the 599 alive, and lifts the backbone fraction by about 1 percentage point
-  of interior nodes. On e03's toy model the same statistic reached z = 28.7;
-  here it is 4.2.
+  fails).** Neither seed is either: the connectivity test fails while the
+  causal tests pass.
+- **The causal passes rest on one attention pair** (exploratory section and
+  replication below).
+  - Each seed's backbone contains a value and an output direction of layer 2's
+    attention that together close about 4% of the gap. Either one alone closes
+    nothing.
+  - In seed 1 the backbone is that pair plus components adding 0.04 points. The
+    best random set and the top mean-CI set contain the same pair.
+- **The structure the sieve finds is small and weak.**
+  - Seed 0: 12 components, 2% of the 599 alive. Seed 1: 6 components, of 873.
+  - The peak z is 3.0-4.5, against 28.7 on e03's toy model.
+
+The sections from "What ran" to "What the data show" describe seed 0. Seed 1 is
+under "Replication".
 
 ## What ran
 
@@ -140,16 +156,76 @@ A follow-up measurement on the same rows (`experiments/e04_explore_pair.py`,
   beats the 7 that do (best 4.2%), but most of its margin over the median
   random set comes from containing the pair.
 
+## Replication (seed 1, pre-registered)
+
+Run `p-542cdc24`: the same configuration with decomposition seed 1. The gate
+addendum pre-registered it with the same gate and Q1-Q3 rules (R-Q1 to R-Q3),
+before any seed-0 evaluation was read. It ran 06:37-12:39 on 2026-10-18 without
+a restart. Results are in `results/e04_seed1/` and figures in
+`docs/figures/e04_seed1/`.
+
+- **Quality.** The CI-masked model is 0.65 nats (KL) from the target; zeroing the
+  slice costs 6.55. It leaves 8.3% of the gap unrecovered, against 15% for
+  random masks.
+- **Graph.**
+  - 873 of 7,680 components are alive (seed 0: 599).
+  - 874 nodes, 113,554 edges, 274 sources.
+- **R-Q1 fails under both controls.**
+
+  | Control | Peak z | Shuffles at or above it | Shuffle max | p | c* |
+  |---|---|---|---|---|---|
+  | Within-layer | 2.96 | 6 | 4.85 | 0.07 | 0.020 |
+  | In-strength | 3.16 | 3 | 4.47 | 0.04 | 0.097 |
+
+- **Backbones.** All in layer 2.
+  - Within-layer, at c* 0.020: 6 components, v[182], o[59], gate[22], up[84]
+    and down[168, 251].
+  - In-strength, at c* 0.097: 17 components, including those 6.
+- **R-Q2 and R-Q3 pass, by 0.002 nats.**
+
+  | Set | KL (nats/token) | Share of the gap closed |
+  |---|---|---|
+  | None of the slice | 6.664 | 0% |
+  | Matched random sets, median | 6.663 | 0.01% |
+  | Matched random sets, best | 6.435 | 3.83% |
+  | Top mean-CI set | 6.435 | 3.83% |
+  | **Sieved backbone** | **6.433** | **3.87%** |
+  | All components | 0.686 | 100% |
+
+**The attention pair again (exploratory).** The 5 random sets that close more
+than 1% of the gap all contain both L2 v[182] and L2 o[59]. Both components are
+also in the backbone and in the top mean-CI set. Pair check
+(`experiments/e04_explore_pair.py --v 182 --o 59`):
+
+| Set | Share of the gap closed |
+|---|---|
+| v[182] alone, o[59] alone | 0.0% each |
+| v[182] + o[59] | 3.82% |
+| Backbone without the pair | 0.21% |
+| Backbone | 3.87% |
+| Top mean-CI set without the pair | 0.005% |
+| Top mean-CI set | 3.83% |
+
+- **The two seeds' pairs look like the same mechanism.**
+  - Value directions: firing rate 0.183 and 0.188, mean CI 0.155 and 0.151.
+  - Output directions: firing on 97% and 99% of tokens, mean CI 0.94 and 0.99.
+
+  It is an attention output active on nearly every token, through one value
+  direction that is active on about a fifth of them.
+- **Seed 0's finding that the backbone's MLP components work together with the
+  pair does not replicate.** They added about 1.3 points in seed 0 and add 0.04
+  in seed 1.
+
 ## Caveats
 
-- **One decomposition seed.** The gate addendum pre-registers a seed-1
-  replication under the same rules (R-Q1 to R-Q3). It has not run yet.
-- **The p-value floor is 0.0099 with 100 shuffles or random sets.** Q1
-  in-strength failed by exactly one shuffle. More shuffles would estimate that
-  p-value better, but the rule as written is "beats all 100", and it did not.
+- **Two decomposition seeds, one slice, one model.**
+- **The p-value floor is 0.0099 with 100 shuffles or random sets.** Seed 0's
+  Q1 in-strength test failed by exactly one shuffle. More shuffles would
+  estimate that p-value better, but the rule is "beats all 100". Seed 1 fails
+  both controls by more than one shuffle anyway.
 - **The alive threshold depends on token count.** At 10^-5 over 102,400
-  tokens, a component must fire at least twice to count as alive. The graph
-  has 599 alive nodes; a smaller sample would have admitted more.
+  tokens, a component must fire at least twice to count as alive (599 alive
+  in seed 0, 873 in seed 1). A smaller sample would have admitted more.
 - **The slice was chosen for the size of its effect** (zero-ablation KL ≥ 1
   nat; `e04_design.md`). Layers 2-3 sit early in the network, so the result may
   not hold for the middle layers, where the first choice (13-14) barely
@@ -157,13 +233,12 @@ A follow-up measurement on the same rows (`experiments/e04_explore_pair.py`,
 
 ## Next
 
-- **Seed-1 replication**, pre-registered in the gate addendum. It needs about
-  3.5 h of training and about 2 h for the later stages, under a 12-13 GB lease
-  when the GPU is free:
-  ```
-  E04_SEED=1 E04_OUT=out/e04_seed1 E04_CONFIG=configs/e04/vpd_qwen3_0.6b_L2-3_seed1.yaml python experiments/e04_pipeline.py
-  ```
-  This runs with param-decomp's venv, on the fork's `feature/qwen3-topology`
-  branch.
-- **Q1 also asks for both controls, so the replication shows whether this
-  near-miss was chance.**
+- **Find out what the always-on layer-2 attention pair computes.** It dominates
+  the causal results in both seeds. Two candidates are an attention-sink route
+  and a positional signal.
+- **A causal null that keeps the pair's AND structure.** Per-module matching
+  rarely draws both halves, so Q2's random sets are a weak baseline whenever
+  one route dominates.
+- **The sieve itself.** Its small-c excess was weak in seed 0 and absent in
+  seed 1. On this slice, the connected structure it detects does not stand out
+  from strength-matched noise.

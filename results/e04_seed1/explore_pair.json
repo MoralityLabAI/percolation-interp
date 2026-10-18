@@ -1,0 +1,46 @@
+{
+ "run_id": "p-542cdc24",
+ "pair": [
+  [
+   "model.layers.2.self_attn.v_proj",
+   182
+  ],
+  [
+   "model.layers.2.self_attn.o_proj",
+   59
+  ]
+ ],
+ "kl": {
+  "pair": 6.435707435011864,
+  "v_only": 6.664207637310028,
+  "o_only": 6.664207637310028,
+  "backbone": 6.433072999119759,
+  "backbone_minus_pair": 6.6519691944122314,
+  "top_ci": 6.435294508934021,
+  "top_ci_minus_pair": 6.663913428783417,
+  "none": 6.664207637310028,
+  "all": 0.6861258000135422
+ },
+ "share_of_gap": {
+  "pair": 0.03822299669311666,
+  "v_only": 0.0,
+  "o_only": 0.0,
+  "backbone": 0.03866367916682741,
+  "backbone_minus_pair": 0.002047219029596175,
+  "top_ci": 0.03829207003287366,
+  "top_ci_minus_pair": 4.92145364715148e-05,
+  "none": 0.0,
+  "all": 1.0
+ },
+ "sizes": {
+  "pair": 2,
+  "v_only": 1,
+  "o_only": 1,
+  "backbone": 6,
+  "backbone_minus_pair": 4,
+  "top_ci": 6,
+  "top_ci_minus_pair": 4,
+  "none": 0
+ },
+ "tokens": 16384
+}
