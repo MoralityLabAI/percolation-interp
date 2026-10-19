@@ -1,7 +1,7 @@
 # e05: the percolation sieve on Qwen3-0.6B, with baselines that keep position 0
 
-Draft written 2026-10-19, before any e05 measurement. It is committed before
-the slice-selection measurement and before any e05 decomposition is trained.
+Written 2026-10-19 and approved as final the same day. It was committed before
+the slice-selection measurement and before any e05 decomposition was trained.
 
 ## Why e05
 
