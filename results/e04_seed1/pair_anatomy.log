@@ -1,0 +1,27 @@
+vramorama: lease b466804d waits for 5,120 MiB on NVIDIA GeForce RTX 5080 Laptop GPU: 15,403 MiB free; confirming it stays free and stops growing for 15s
+vramorama: lease b466804d admitted after 18s; starting C:/Users/patri/Documents/GitHub/MoralityLabAI/param-decomp/.venv/Scripts/python.exe -u experiments/e04_pair_anatomy.py --v 182 --o 59
+Loading run from C:\Users\patri\param_decomp_out\runs\param-decomp-p-542cdc24
+{
+ "fire_rate": {
+  "v_pos0": 1.0,
+  "v_rest": 0.17562746062992127,
+  "o_pos0": 0.0,
+  "o_rest": 1.0
+ },
+ "pair_scalar": {
+  "mean": -0.13269545137882233,
+  "sd": 0.062300387769937515,
+  "share_of_second_moment_in_mean": 0.8193926215171814,
+  "frac_positive": 0.0103759765625
+ },
+ "v_distinct_tokens": 652
+}
+v top tokens: [(',', 394), ('.', 306), (' ', 187), (' the', 128), (' and', 113), ('\n', 97), ('.\n\n', 76), (' (', 76), (')', 70), (';', 48), ('\n\n', 39), (':', 37), ('.\n', 21), (' {\n', 21), ('"', 19)]
+writer output norms (pos 0 / rest): {'2.self_attn.o_proj': '20.1 / 3.3', '2.mlp.down_proj': '6856.2 / 5.3', '3.self_attn.o_proj': '2.0 / 3.9', '3.mlp.down_proj': '0.2 / 7.1'}
+all                    KL 0.6861  share of gap 100.00%
+none                   KL 6.6642  share of gap 0.00%
+pair                   KL 6.4357  share of gap 3.82%
+none_plus_pair_mean    KL 6.5678  share of gap 1.61%
+slice_writers_mean_ablated KL 9.7694  share of gap -51.94%
+slice_all_proj_mean_ablated KL 9.7694  share of gap -51.94%
+slice_writers_mean_ablated_pos0_apart KL 0.7592  share of gap 98.78%

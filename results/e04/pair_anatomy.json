@@ -1,0 +1,126 @@
+{
+ "run_id": "p-1ae4ebad",
+ "pair": [
+  [
+   "model.layers.2.self_attn.v_proj",
+   187
+  ],
+  [
+   "model.layers.2.self_attn.o_proj",
+   335
+  ]
+ ],
+ "tokens": 16384,
+ "fire_rate": {
+  "v_pos0": 1.0,
+  "v_rest": 0.17531988188976377,
+  "o_pos0": 0.0,
+  "o_rest": 0.9848056102362205
+ },
+ "v_top_tokens": [
+  [
+   ",",
+   409
+  ],
+  [
+   ".",
+   294
+  ],
+  [
+   " ",
+   151
+  ],
+  [
+   " and",
+   144
+  ],
+  [
+   " the",
+   135
+  ],
+  [
+   "\n",
+   97
+  ],
+  [
+   ")",
+   78
+  ],
+  [
+   ".\n\n",
+   75
+  ],
+  [
+   ";",
+   48
+  ],
+  [
+   " (",
+   46
+  ],
+  [
+   "\n\n",
+   39
+  ],
+  [
+   ":",
+   31
+  ],
+  [
+   "1",
+   24
+  ],
+  [
+   " a",
+   24
+  ],
+  [
+   " that",
+   22
+  ]
+ ],
+ "v_distinct_tokens": 699,
+ "pair_scalar": {
+  "mean": -0.24351707100868225,
+  "sd": 0.10805878788232803,
+  "share_of_second_moment_in_mean": 0.835495114326477,
+  "frac_positive": 0.0
+ },
+ "pair_mean_vec_norm": 0.6126017570495605,
+ "writer_output_norm": {
+  "model.layers.2.self_attn.o_proj": {
+   "pos0": 20.09569400548935,
+   "rest": 3.311676603602612
+  },
+  "model.layers.2.mlp.down_proj": {
+   "pos0": 6856.188690185547,
+   "rest": 5.317670686977116
+  },
+  "model.layers.3.self_attn.o_proj": {
+   "pos0": 2.0321793630719185,
+   "rest": 3.8701699624850057
+  },
+  "model.layers.3.mlp.down_proj": {
+   "pos0": 0.175763092469424,
+   "rest": 7.08613045760027
+  }
+ },
+ "kl": {
+  "all": 0.7102617081254721,
+  "none": 6.664207637310028,
+  "pair": 6.425794631242752,
+  "none_plus_pair_mean": 6.475236758589745,
+  "slice_writers_mean_ablated": 9.76937584578991,
+  "slice_all_proj_mean_ablated": 9.76937584578991,
+  "slice_writers_mean_ablated_pos0_apart": 0.7592096086591482
+ },
+ "share_of_gap": {
+  "all": 1.0,
+  "none": 0.0,
+  "pair": 0.0400428571073585,
+  "none_plus_pair_mean": 0.031738762993127265,
+  "slice_writers_mean_ablated": -0.5215311400896717,
+  "slice_all_proj_mean_ablated": -0.5215311400896717,
+  "slice_writers_mean_ablated_pos0_apart": 0.9917789141661923
+ }
+}

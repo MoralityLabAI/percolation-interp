@@ -1,0 +1,22 @@
+vramorama: lease aab55ffd waits for 5,120 MiB on NVIDIA GeForce RTX 5080 Laptop GPU: 15,403 MiB free; confirming it stays free and stops growing for 15s
+vramorama: lease aab55ffd admitted after 18s; starting C:/Users/patri/Documents/GitHub/MoralityLabAI/param-decomp/.venv/Scripts/python.exe -u experiments/e04_massive.py
+Loading run from C:\Users\patri\param_decomp_out\runs\param-decomp-p-542cdc24
+{'c': 168, 'write_norm_pos0': 632.95166015625, 'ci_mean': 0.00895642280291213, 'in_backbone': True, 'in_top_ci': True}
+{'c': 251, 'write_norm_pos0': 628.5194091796875, 'ci_mean': 0.00784524320752098, 'in_backbone': True, 'in_top_ci': False}
+{'c': 26, 'write_norm_pos0': 499.1383056640625, 'ci_mean': 0.007841977806783688, 'in_backbone': False, 'in_top_ci': False}
+{'c': 241, 'write_norm_pos0': 422.2563781738281, 'ci_mean': 0.007842037513237301, 'in_backbone': False, 'in_top_ci': False}
+{'c': 612, 'write_norm_pos0': 391.1074523925781, 'ci_mean': 0.007847847847633602, 'in_backbone': False, 'in_top_ci': False}
+all                              KL 0.6861  share of gap 100.00%  pos-0 down write   6179.1
+none                             KL 6.6642  share of gap   0.00%  pos-0 down write      0.0
+massive_top1                     KL 6.6642  share of gap   0.00%  pos-0 down write      0.0
+massive_top2                     KL 6.6642  share of gap   0.00%  pos-0 down write      0.0
+massive_top3                     KL 6.6642  share of gap   0.00%  pos-0 down write      0.0
+massive_top5                     KL 6.6642  share of gap   0.00%  pos-0 down write      0.0
+backbone                         KL 6.4331  share of gap   3.87%  pos-0 down write      8.6
+backbone_plus_massive_top1       KL 6.4331  share of gap   3.87%  pos-0 down write      8.6
+writers_pos0_actual_rest_zero    KL 1.0977  share of gap  93.12%
+writers_pos0_mean_rest_zero      KL 1.0985  share of gap  93.10%
+writers_pos0_zero_rest_mean      KL 6.5876  share of gap   1.28%
+writers_pos0_mean_rest_mean      KL 0.7592  share of gap  98.78%
+writers_pos0_actual_rest_mean    KL 0.7585  share of gap  98.79%
+target pos-0 down write 6856.2

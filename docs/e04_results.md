@@ -43,6 +43,11 @@ existed. Run 2026-10-18.
 The sections from "What ran" to "What the data show" describe seed 0. Seed 1 is
 under "Replication".
 
+**Added after both seeds were scored.** e04's zero-ablation baseline is about
+94% one vector: the massive activation that layer 2 writes at position 0. The
+causal sets were all scored without it. See "After both seeds: the massive
+activation".
+
 ## What ran
 
 - **Decomposition.** Run `p-1ae4ebad`: VPD of layers 2 and 3 of Qwen3-0.6B,
@@ -216,6 +221,78 @@ also in the backbone and in the top mean-CI set. Pair check
   pair does not replicate.** They added about 1.3 points in seed 0 and add 0.04
   in seed 1.
 
+## After both seeds: the massive activation (exploratory)
+
+Run 2026-10-19, after both seeds were scored. Nothing here changes a verdict.
+It changes what the gate and Q2/Q3 measured. Scripts:
+`experiments/e04_pair_anatomy.py` and `experiments/e04_massive.py`. Results:
+`results/e04*/pair_anatomy.json` and `results/e04*/massive.json`.
+
+**The zero-ablation gap is almost all one vector at position 0.**
+
+Layer 2's `down_proj` writes a vector of norm 6,856 at position 0 and about 5
+elsewhere: Qwen's massive activation, the anchor of its attention sink. Editing
+only what layers 2-3 write to the residual stream (the `o_proj` and `down_proj`
+outputs), on the target model:
+
+| What layers 2-3 write | KL to the target (nats) | Share of the zero-ablation gap (seed 0) |
+|---|---|---|
+| Nothing (zero ablation: e04's "none" and the slice-selection rule) | 6.66 | 0% |
+| Position 0 only (its actual or mean value); other positions zero | 1.10 | 93.5% |
+| Other positions at their means; position 0 zero | 6.59 | 1.3% |
+| Every position at its mean, position 0 apart | 0.76 | 99.2% |
+| One mean over all positions (smears the position-0 vector everywhere) | 9.77 | −52% |
+| CI-masked decomposition, for comparison | 0.71 (seed 0), 0.69 (seed 1) | 100% |
+
+- **The slice's token-dependent computation costs about 0.76 nats.** The other
+  ~5.9 nats of the zero-ablation gap come from deleting one nearly constant
+  vector at position 0, plus the mean offsets.
+- **The slice-selection rule** (zero-ablation KL ≥ 1 nat) therefore picked
+  layers 2-3 mainly because they write the massive activation.
+- **The gate** measured unrecovered cross-entropy against that same baseline.
+  - Against a position-aware mean ablation, the decomposition does little
+    better than constants: 0.71 nats against 0.76 for seed 0, 0.69 for seed 1.
+  - It does reproduce most of the massive activation: a position-0 write of
+    norm 6,048 (seed 0) and 6,179 (seed 1), against the target's 6,856.
+
+**The sieve's backbone contains the massive activation's writers, but they write
+nothing in the causal test.**
+
+- The components writing most of the position-0 vector fire only at position 0
+  (mean CI 0.0078, about 1/128).
+  - Seed 0: four of them (410, 539, 607, 121) are the four `down_proj`
+    components of the backbone.
+  - Seed 1: the top two (168, 251) are the two `down_proj` components of its
+    backbone.
+- Their attribution edges are huge, so the sieve keeps them. But the gate/up
+  components that drive them at position 0 are not in the backbone.
+  - With only the backbone kept, `down_proj` writes 54 (seed 0) or 9 (seed 1)
+    at position 0, against about 6,000 for the full decomposition.
+  - Every Q2/Q3 set was therefore scored with the attention sink missing: KL
+    6.3-6.7 nats, in a model that is broken for reasons none of the sets can
+    fix.
+
+**The attention pair is a sink route.**
+
+- Its value direction fires at position 0 in every row, and on about 17.5% of
+  other tokens. Those are mostly punctuation and function words: `,` `.`
+  ` and` ` the` newlines `)` `;`, the usual secondary sinks.
+- Its output direction never fires at position 0, and fires at 98.5%
+  (seed 0) or 100% (seed 1) of the other positions.
+- With only the pair kept, it writes s_t × U[o] with s_t almost always
+  negative.
+  - Seed 0: mean −0.24, sd 0.11. Seed 1: mean −0.13, sd 0.06.
+  - The constant carries 84% and 82% of s_t's second moment.
+- Adding back only the pair's mean output recovers 3.2 of its 4.0 points in
+  seed 0, but only 1.6 of 3.8 in seed 1.
+
+So the one route that gave Q2/Q3 their margins is attention to the sink tokens,
+writing a roughly constant vector at every later position.
+
+**What follows for e04.** The verdict stands: Q1 fails, which does not depend on
+the baseline. But e04's causal numbers measure a model with its attention sink
+removed. They are not evidence about the slice's token-dependent computation.
+
 ## Caveats
 
 - **Two decomposition seeds, one slice, one model.**
@@ -233,11 +310,15 @@ also in the backbone and in the top mean-CI set. Pair check
 
 ## Next
 
-- **Find out what the always-on layer-2 attention pair computes.** It dominates
-  the causal results in both seeds. Two candidates are an attention-sink route
-  and a positional signal.
-- **A causal null that keeps the pair's AND structure.** Per-module matching
-  rarely draws both halves, so Q2's random sets are a weak baseline whenever
+- **Any rerun needs a baseline that keeps position 0.**
+  - Choose the slice by position-aware mean-ablation KL, not zero-ablation KL.
+  - State the gate against that baseline.
+  - In the causal test, either keep the massive-activation route on in every
+    set, or measure KL at positions ≥ 1 with position 0 held at the target's
+    value.
+  - That would be a new pre-registered design (e05), not a revision of e04.
+- **A causal null that keeps AND structure.** Per-module matching rarely draws
+  both halves of a v→o route, so Q2's random sets are a weak baseline whenever
   one route dominates.
 - **The sieve itself.** Its small-c excess was weak in seed 0 and absent in
   seed 1. On this slice, the connected structure it detects does not stand out

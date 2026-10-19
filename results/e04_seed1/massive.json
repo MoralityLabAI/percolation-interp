@@ -1,0 +1,83 @@
+{
+ "run_id": "p-542cdc24",
+ "module": "model.layers.2.mlp.down_proj",
+ "top_writers": [
+  {
+   "c": 168,
+   "write_norm_pos0": 632.95166015625,
+   "ci_mean": 0.00895642280291213,
+   "in_backbone": true,
+   "in_top_ci": true
+  },
+  {
+   "c": 251,
+   "write_norm_pos0": 628.5194091796875,
+   "ci_mean": 0.00784524320752098,
+   "in_backbone": true,
+   "in_top_ci": false
+  },
+  {
+   "c": 26,
+   "write_norm_pos0": 499.1383056640625,
+   "ci_mean": 0.007841977806783688,
+   "in_backbone": false,
+   "in_top_ci": false
+  },
+  {
+   "c": 241,
+   "write_norm_pos0": 422.2563781738281,
+   "ci_mean": 0.007842037513237301,
+   "in_backbone": false,
+   "in_top_ci": false
+  },
+  {
+   "c": 612,
+   "write_norm_pos0": 391.1074523925781,
+   "ci_mean": 0.007847847847633602,
+   "in_backbone": false,
+   "in_top_ci": false
+  }
+ ],
+ "total_write_norm_pos0": 9411.658203125,
+ "down_write_norm_pos0": {
+  "all": 6179.0950927734375,
+  "none": 0.0,
+  "massive_top1": 0.0,
+  "massive_top2": 0.0,
+  "massive_top3": 0.0,
+  "massive_top5": 0.0,
+  "backbone": 8.572354525327682,
+  "backbone_plus_massive_top1": 8.572354525327682,
+  "target": 6856.188690185547
+ },
+ "kl": {
+  "all": 0.6861258000135422,
+  "none": 6.664207637310028,
+  "massive_top1": 6.664207637310028,
+  "massive_top2": 6.664207637310028,
+  "massive_top3": 6.664207637310028,
+  "massive_top5": 6.664207637310028,
+  "backbone": 6.433072999119759,
+  "backbone_plus_massive_top1": 6.433072999119759,
+  "writers_pos0_actual_rest_zero": 1.0977028366178274,
+  "writers_pos0_mean_rest_zero": 1.0984789840877056,
+  "writers_pos0_zero_rest_mean": 6.587574630975723,
+  "writers_pos0_mean_rest_mean": 0.7592096086591482,
+  "writers_pos0_actual_rest_mean": 0.758484928868711
+ },
+ "share_of_gap": {
+  "all": 1.0,
+  "none": 0.0,
+  "massive_top1": 0.0,
+  "massive_top2": 0.0,
+  "massive_top3": 0.0,
+  "massive_top5": 0.0,
+  "backbone": 0.03866367916682741,
+  "backbone_plus_massive_top1": 0.03866367916682741,
+  "writers_pos0_actual_rest_zero": 0.9311523248081837,
+  "writers_pos0_mean_rest_zero": 0.9310224926160185,
+  "writers_pos0_zero_rest_mean": 0.012818995861883542,
+  "writers_pos0_mean_rest_mean": 0.9877747058948498,
+  "writers_pos0_actual_rest_mean": 0.9878959286900809
+ }
+}
