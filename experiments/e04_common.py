@@ -17,7 +17,37 @@ MODEL = "Qwen/Qwen3-0.6B"
 # E04_STEPS=40000 (e04b) or E04_SEED=1 (replication), with their own E04_OUT.
 STEPS = int(os.environ.get("E04_STEPS", 20000))
 SEED = int(os.environ.get("E04_SEED", 0))
-SLICE = (2, 3)  # decomposed layers (revised from 13-14; docs/e04_design.md)
+# Decomposed layers: e04 used 2-3 (revised from 13-14; docs/e04_design.md); e05 sets E04_SLICE=0,1.
+SLICE = tuple(int(x) for x in os.environ.get("E04_SLICE", "2,3").split(","))
+
+
+def install_qwen3_schema():
+    """Register a Qwen3ForCausalLM path schema with param-decomp's topology at runtime.
+
+    The same schema as the fork's local feature/qwen3-topology branch, so attributions run on
+    any param-decomp checkout. Only the topology (attributions) needs it; training does not.
+    """
+    from param_decomp.topology import path_schemas as ps
+    from param_decomp.topology import topology as tp
+
+    if getattr(tp.get_path_schema, "qwen3_registered", False):
+        return
+    from transformers.models.qwen3 import Qwen3ForCausalLM
+
+    class _HFQwen3PathSchema(ps._PathSchema):
+        embedding_path = "model.embed_tokens"
+        blocks = "model.layers"
+        attn = ps._SeparateAttnPathSchema(base="self_attn", q="q_proj", k="k_proj", v="v_proj", o="o_proj")
+        mlp = ps._GLUPathSchema(base="mlp", gate="gate_proj", up="up_proj", down="down_proj")
+        unembed_path = "lm_head"
+
+    original = ps.get_path_schema
+
+    def get_path_schema(model):
+        return _HFQwen3PathSchema() if isinstance(model, Qwen3ForCausalLM) else original(model)
+
+    get_path_schema.qwen3_registered = True
+    ps.get_path_schema = tp.get_path_schema = get_path_schema
 MIN_RATE = 1e-5
 CI_FIRE = 0.1
 STAGE = {"attn.q": 0, "attn.k": 0, "attn.v": 0, "attn.o": 1, "glu.gate": 2, "glu.up": 2, "glu.down": 3}

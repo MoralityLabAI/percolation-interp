@@ -19,7 +19,7 @@ import time
 
 import torch
 
-from e04_common import MIN_RATE, OUT, find_run, heldout_part, load_component_model, load_stats
+from e04_common import MIN_RATE, OUT, find_run, heldout_part, install_qwen3_schema, load_component_model, load_stats
 
 
 def main():
@@ -33,6 +33,7 @@ def main():
     from param_decomp.dataset_attributions.harvester import AttributionHarvester
     from param_decomp.topology import TransformerTopology, get_sources_by_target
 
+    install_qwen3_schema()
     run_id = find_run(args.step)
     cm, run_info = load_component_model(run_id, args.device)
     stats = load_stats()
