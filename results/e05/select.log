@@ -1,0 +1,31 @@
+vramorama: lease 70768431 waits for 6,144 MiB on NVIDIA GeForce RTX 5080 Laptop GPU: 15,403 MiB free; confirming it stays free and stops growing for 15s
+vramorama: lease 70768431 admitted after 18s; starting C:/Users/patri/Documents/GitHub/MoralityLabAI/param-decomp/.venv/Scripts/python.exe -u experiments/e05_select.py
+`torch_dtype` is deprecated! Use `dtype` instead!
+layers 0-1: KL_PAMA 7.8968
+layers 1-2: KL_PAMA 0.9266  (excluded)
+layers 2-3: KL_PAMA 0.7396  (excluded)
+layers 3-4: KL_PAMA 0.6085
+layers 4-5: KL_PAMA 0.5979
+layers 5-6: KL_PAMA 0.4641
+layers 6-7: KL_PAMA 0.3525
+layers 7-8: KL_PAMA 0.2300
+layers 8-9: KL_PAMA 0.2464
+layers 9-10: KL_PAMA 0.2798
+layers 10-11: KL_PAMA 0.2703
+layers 11-12: KL_PAMA 0.1956
+layers 12-13: KL_PAMA 0.1280
+layers 13-14: KL_PAMA 0.1448
+layers 14-15: KL_PAMA 0.1940
+layers 15-16: KL_PAMA 0.3312
+layers 16-17: KL_PAMA 0.5976
+layers 17-18: KL_PAMA 0.6583
+layers 18-19: KL_PAMA 0.8856
+layers 19-20: KL_PAMA 1.0458
+layers 20-21: KL_PAMA 0.8887
+layers 21-22: KL_PAMA 0.6686
+layers 22-23: KL_PAMA 0.4791
+layers 23-24: KL_PAMA 0.3990
+layers 24-25: KL_PAMA 0.4035
+layers 25-26: KL_PAMA 0.4531
+layers 26-27: KL_PAMA 0.7410
+excluded layers [2]; selected 0-1 (KL_PAMA 7.8968)
