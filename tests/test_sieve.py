@@ -47,3 +47,13 @@ def test_sieve_finds_planted_structure_and_null_is_flat():
     g2 = complete_layered([40] * 5, rng)
     res2 = sieve(g2, rng.random(g2.n_edges), n_shuffles=10)
     assert res2.p_value > 0.05
+
+
+def test_sieve_keeps_null_entries_matching_its_shuffles():
+    g, w, _ = planted_graph()
+    res = sieve(g, w, n_shuffles=6, keep_null_entries=True, rng=np.random.default_rng(5))
+    assert res.null_node_entry.shape == (6, g.n_nodes)
+    nodes = ~(g.sources | g.sinks)
+    again = (res.null_node_entry[:, nodes][:, None, :] <= res.cs[None, :, None]).mean(2)
+    assert np.allclose(again, res.shuffles)
+    assert sieve(g, w, n_shuffles=2).null_node_entry is None

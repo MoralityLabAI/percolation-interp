@@ -58,6 +58,7 @@ class SieveResult:
     null_peaks: np.ndarray  # each shuffle's peak z against the other shuffles
     backbone: np.ndarray  # boolean node mask: on the backbone at c*
     node_entry: np.ndarray  # c at which each node joins the backbone (graph)
+    null_node_entry: np.ndarray | None = None  # (n_shuffles, n_nodes), if keep_null_entries
 
     @property
     def p_value(self) -> float:
@@ -72,14 +73,17 @@ def _z(x: np.ndarray, ref: np.ndarray, floor: float) -> np.ndarray:
 def sieve(g: LayeredDAG, weight: np.ndarray, groups: np.ndarray | None = None, cs: np.ndarray | None = None,
           n_shuffles: int = 100, rng: np.random.Generator | None = None,
           nodes: np.ndarray | None = None, z_min: float = 3.0,
-          null_groups: np.ndarray | None = None) -> SieveResult:
+          null_groups: np.ndarray | None = None, keep_null_entries: bool = False) -> SieveResult:
     """Run the sieve. `nodes` restricts the backbone fraction to a node subset (default: all
     nodes that are neither sources nor sinks).
 
     null_groups: labels within which the null permutes weights (default: the ranking groups,
     i.e. within-layer shuffles). Pass g.src to keep every source node's out-strength
     distribution (permute its out-edges among its targets), or g.dst for in-strength.
-    Ranking always uses `groups`."""
+    Ranking always uses `groups`.
+
+    keep_null_entries: also return each shuffle's node entry c (null_node_entry), e.g. to take
+    the backbones of shuffled graphs as a null of connected sets."""
     rng = rng or np.random.default_rng(0)
     groups = g.edge_layer("dst") if groups is None else groups
     if nodes is None:
@@ -90,7 +94,7 @@ def sieve(g: LayeredDAG, weight: np.ndarray, groups: np.ndarray | None = None, c
     prof = profile(g, E)
     ne = prof.node_entry[nodes]
     real = (ne[None, :] <= cs[:, None]).mean(1)
-    shuffles = []
+    shuffles, null_entries = [], []
     live = np.asarray(weight) > 0
     null_groups = groups if null_groups is None else np.asarray(null_groups)
     for _ in range(n_shuffles):
@@ -98,6 +102,8 @@ def sieve(g: LayeredDAG, weight: np.ndarray, groups: np.ndarray | None = None, c
         w[live] = permute_within(np.asarray(weight, dtype=float)[live], null_groups[live], rng)
         ps = profile(g, degree_entry(g, w, groups))
         shuffles.append((ps.node_entry[nodes][None, :] <= cs[:, None]).mean(1))
+        if keep_null_entries:
+            null_entries.append(ps.node_entry.astype(np.float32))
     shuffles = np.array(shuffles)
     floor = 1.0 / max(1, nodes.sum())
     learned = real - shuffles.mean(0)
@@ -109,4 +115,5 @@ def sieve(g: LayeredDAG, weight: np.ndarray, groups: np.ndarray | None = None, c
     k = int(np.argmax(np.where(ok, learned, -np.inf))) if ok.any() else int(np.argmax(learned))
     return SieveResult(cs=cs, real=real, shuffles=shuffles, learned=learned, z=z, c_star=float(cs[k]),
                        peak=float(learned[k]), z_peak=float(z.max()), null_peaks=null_peaks,
-                       backbone=prof.node_entry <= cs[k], node_entry=prof.node_entry)
+                       backbone=prof.node_entry <= cs[k], node_entry=prof.node_entry,
+                       null_node_entry=np.array(null_entries) if keep_null_entries else None)
