@@ -1,0 +1,5 @@
+vramorama: lease 9291d22e waits for 5,120 MiB on NVIDIA GeForce RTX 5080 Laptop GPU: 15,403 MiB free; confirming it stays free and stops growing for 15s
+vramorama: lease 9291d22e admitted after 18s; starting C:\Users\patri\Documents\GitHub\MoralityLabAI\param-decomp\.venv\Scripts\python.exe -u C:\Users\patri\Documents\GitHub\MoralityLabAI\percolation-interp\experiments/e05_gate.py
+vramorama: holding the machine awake with the screen on while the job runs (no setting changes; --no-keep-awake opts out)
+Loading run from C:\Users\patri\param_decomp_out\runs\param-decomp-p-22cc741d
+run p-22cc741d: KL(CI-masked) 2.8433, KL_PAMA 7.7739, ratio 0.366: FAIL

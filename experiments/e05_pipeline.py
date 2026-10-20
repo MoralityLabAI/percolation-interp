@@ -1,6 +1,9 @@
 """e05 driver (docs/e05_design.md): for each seed, decomposition, gate, then Q1-Q4's stages.
 
-  python experiments/e05_pipeline.py --seeds 0 1      (param-decomp venv; launch detached)
+  python experiments/e05_pipeline.py --seeds 0 1 [--steps 40000]      (param-decomp venv; launch detached)
+
+--steps 40000 runs the design's retrain for a seed that failed its gate at 20k, with its own
+config (configs/e05/..._seed<N>_40k.yaml) and outputs (out/e05_seed<N>_40k/).
 
 Each seed runs in its own process (e04_common reads its settings from the environment at
 import), in order. Per seed, logs and outputs go to out/e05_seed<N>/. Every GPU job runs under a
@@ -22,9 +25,11 @@ ROOT = Path(__file__).resolve().parents[1]
 SLICE = "0,1"
 
 
-def seed_env(seed: int) -> dict:
-    return dict(os.environ, E04_SEED=str(seed), E04_SLICE=SLICE, E04_OUT=str(ROOT / "out" / f"e05_seed{seed}"),
-                E04_CONFIG=str(ROOT / "configs" / "e05" / f"vpd_qwen3_0.6b_L0-1_seed{seed}.yaml"))
+def seed_env(seed: int, steps: int = 20000) -> dict:
+    tag = "" if steps == 20000 else f"_{steps // 1000}k"
+    return dict(os.environ, E04_SEED=str(seed), E04_STEPS=str(steps), E04_SLICE=SLICE,
+                E04_OUT=str(ROOT / "out" / f"e05_seed{seed}{tag}"),
+                E04_CONFIG=str(ROOT / "configs" / "e05" / f"vpd_qwen3_0.6b_L0-1_seed{seed}{tag}.yaml"))
 
 
 def run_seed():
@@ -64,6 +69,7 @@ def run_seed():
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--seeds", type=int, nargs="+")
+    ap.add_argument("--steps", type=int, default=20000)
     ap.add_argument("--one-seed", action="store_true", help="internal: run the seed given by E04_SEED")
     args = ap.parse_args()
     if args.one_seed:
@@ -71,7 +77,7 @@ def main():
         return
     for s in args.seeds:
         print(f"=== seed {s}", flush=True)
-        r = subprocess.run([sys.executable, "-u", __file__, "--one-seed"], env=seed_env(s), cwd=ROOT)
+        r = subprocess.run([sys.executable, "-u", __file__, "--one-seed"], env=seed_env(s, args.steps), cwd=ROOT)
         print(f"=== seed {s} exited with code {r.returncode}", flush=True)
 
 
