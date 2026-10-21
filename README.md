@@ -100,6 +100,9 @@ hypotheses. Connectivity alone does not establish mechanistic fidelity.
 - `docs/e06_exploratory.md`: e06 discovery analysis (coverage/alignment decomposition, nulls) on e03/e04 graphs
 - `docs/e06_design.md`: e06 design, pre-registered null-model study of the sieve z-curve
 
+- `docs/e07_math.md`: mathematical link between component/neuron sharing and bipartite percolation
+- `docs/e07_design.md`: exploratory VPD geometry study (artifact run queued; no semantic claims)
+
 ## Install
 
 The package is `percinterp`. The core (`graph`, `measure`, `theory`, `controls`, `sieve`)

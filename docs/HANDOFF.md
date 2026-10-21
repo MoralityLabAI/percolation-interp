@@ -108,6 +108,24 @@ nothing yet about e05b gate results. The original baseline reproduces within
 `docs/e05_pama_sensitivity.md`; raw rows: `results/e05_pama_sensitivity.json`.
 Existing suite: 62 tests pass.
 
+## e07: component/neuron percolation exploration
+
+The human requested using the saved VPD to explore percolation math applied
+to polysemanticity. New exploratory plan: `docs/e07_design.md`; derivation
+and interpretation limits: `docs/e07_math.md`. The implementation is
+`src/percinterp/polysemanticity.py`, tested against independent sparse graph
+measurements and known fixed points (68 tests total pass). It treats static
+component/coordinate sharing as a structural proxy, not semantic labels.
+
+`experiments/e07_geometry.py` is queued as a CPU-only job under VRAMorama
+owner `percinterp-e07-geometry`, lease f7c60a48. The system commit-charge
+guard has not admitted it yet; preserve that guard and the existing GPU
+harvest. It will analyze both saved seeds, write `results/e07/geometry.json`,
+and produce a scientific PNG in this chat workspace outputs directory.
+After it completes, inspect actual results/figure, write the exploratory
+results report, and commit task changes locally. Do not duplicate the job
+or claim its mathematical null prediction as an observed artifact result.
+
 ## Research state
 
 | Exp | Question | Status |
