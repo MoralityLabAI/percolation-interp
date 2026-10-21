@@ -12,7 +12,8 @@ from pathlib import Path
 import time
 
 import numpy as np
-import torch
+
+from percinterp.checkpoint_arrays import CheckpointArrays
 
 from percinterp.polysemanticity import (bond_curve, configuration_giant, degree_summary,
                                       direction_energy, mix_basis, support_edges)
@@ -23,6 +24,48 @@ BASE = Path(r"C:\Users\patri\param_decomp_out\decompositions")
 KS = (1, 2, 3, 4, 6, 8, 12, 16)
 PS = np.linspace(0, 1, 41)
 DRAWS, K_DRAWS, BASE_K, SEED = 32, 8, 8, 71022
+
+
+def limit_host_memory(mib=512):
+    """Bound only this CPU process's committed memory on Windows."""
+    if os.name != "nt":
+        return lambda: None
+    import ctypes as c
+    from ctypes import wintypes as w
+    class Basic(c.Structure):
+        _fields_ = [("process_time", c.c_int64), ("job_time", c.c_int64),
+                    ("flags", w.DWORD), ("min_ws", c.c_size_t), ("max_ws", c.c_size_t),
+                    ("active", w.DWORD), ("affinity", c.c_size_t),
+                    ("priority", w.DWORD), ("scheduling", w.DWORD)]
+    class Io(c.Structure):
+        _fields_ = [(name, c.c_uint64) for name in ("read_ops", "write_ops", "other_ops",
+                                                  "read_bytes", "write_bytes", "other_bytes")]
+    class Limits(c.Structure):
+        _fields_ = [("basic", Basic), ("io", Io), ("process_memory", c.c_size_t),
+                    ("job_memory", c.c_size_t), ("peak_process", c.c_size_t), ("peak_job", c.c_size_t)]
+    kernel = c.WinDLL("kernel32", use_last_error=True)
+    kernel.CreateJobObjectW.argtypes = [c.c_void_p, w.LPCWSTR]
+    kernel.CreateJobObjectW.restype = w.HANDLE
+    kernel.GetCurrentProcess.restype = w.HANDLE
+    kernel.SetInformationJobObject.argtypes = [w.HANDLE, c.c_int, c.c_void_p, w.DWORD]
+    kernel.AssignProcessToJobObject.argtypes = [w.HANDLE, w.HANDLE]
+    kernel.QueryInformationJobObject.argtypes = [w.HANDLE, c.c_int, c.c_void_p, w.DWORD, c.c_void_p]
+    handle = kernel.CreateJobObjectW(None, None)
+    if not handle:
+        raise c.WinError(c.get_last_error())
+    info = Limits()
+    info.basic.flags = 0x100  # JOB_OBJECT_LIMIT_PROCESS_MEMORY
+    info.process_memory = mib * 1024 * 1024
+    if not kernel.SetInformationJobObject(handle, 9, c.byref(info), c.sizeof(info)):
+        raise c.WinError(c.get_last_error())
+    if not kernel.AssignProcessToJobObject(handle, kernel.GetCurrentProcess()):
+        raise c.WinError(c.get_last_error())
+    def peak():
+        latest = Limits()
+        if not kernel.QueryInformationJobObject(handle, 9, c.byref(latest), c.sizeof(latest), None):
+            raise c.WinError(c.get_last_error())
+        return latest.peak_process / (1024 * 1024)
+    return peak
 
 
 def distribution(a):
@@ -154,7 +197,8 @@ def plot(result, path):
             if key in ("learned", "configuration"):
                 ax.fill_between(PS, curve["q05"], curve["q95"], color=colors[key], alpha=.12)
         ax.plot(PS, rec["bond"]["configuration_theory"], color="black", ls=":", lw=1, label="degree PGF theory")
-        ax.axvline(rec["bond"]["configuration_pc"], color="black", ls="--", lw=.7, alpha=.45)
+        ax.axvline(rec["bond"]["configuration_pc"], color="black", ls="--", lw=.7, alpha=.45,
+                   label="branching onset p_c")
         ax.set_title(name.replace("_", " "), fontsize=10)
         ax.grid(alpha=.16)
     for ax in axes[-1]:
@@ -162,7 +206,7 @@ def plot(result, path):
     for ax in axes[:, 0]:
         ax.set_ylabel("Largest cluster / all components")
     handles, labels = axes[0, 0].get_legend_handles_labels()
-    fig.legend(handles, labels, loc="lower center", ncol=5, frameon=False)
+    fig.legend(handles, labels, loc="lower center", ncol=3, frameon=False)
     fig.suptitle("VPD component–neuron sharing: structural mixing, not semantic labels\n"
                  "Top 8 coordinates per component; shaded ranges: 5–95% of 32 Monte Carlo draws", fontsize=13)
     fig.tight_layout(rect=(0, .045, 1, .95))
@@ -171,12 +215,67 @@ def plot(result, path):
     plt.close(fig)
 
 
+def plot_overview(result, path):
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    fig, axes = plt.subplots(1, 3, figsize=(14, 4.6))
+    blue, orange, grey, purple = "#184e77", "#f08a24", "#78918a", "#9a6baf"
+    calibration = result["random_support_calibration"]
+    axes[0].plot(PS, calibration["empirical"], color=blue, label="finite simulation")
+    axes[0].plot(PS, calibration["configuration_theory"], color="black", ls=":", label="degree PGF prediction")
+    axes[0].axvline(calibration["configuration_pc"], color="black", ls="--", lw=.8, label="branching onset p_c")
+    axes[0].set_title("A. Validate the percolation math\n3,000 components / 12,000 coordinates", fontsize=10)
+    axes[0].set_ylabel("Largest cluster / all components")
+    axes[0].set_xlabel("Independent bond retention p")
+    axes[0].legend(fontsize=8, frameon=False, loc="lower right")
+    chosen = [result["maps"][f"seed{s}_layer0_gate_write"]["bond"] for s in (0, 1)]
+    for seed, b in enumerate(chosen):
+        axes[1].plot(PS, b["learned"]["mean"], color=blue, ls="-" if seed == 0 else "--",
+                     label=f"learned seed {seed}")
+    for group, color, label in (("configuration", orange, "same-degree rewiring"),
+                                 ("uniform", grey, "uniform contacts"), ("rotated", purple, "orthogonal basis mix")):
+        axes[1].plot(PS, np.mean([b[group]["mean"] for b in chosen], axis=0), color=color, label=label)
+    axes[1].set_title("B. Early mixing comes from contact hubs\nLayer 0 gate-writing directions", fontsize=10)
+    axes[1].set_xlabel("Independent bond retention p")
+    axes[1].legend(fontsize=8, frameon=False, loc="lower right")
+    roles = ("layer0_gate_write", "layer0_up_write", "layer0_down_read",
+             "layer1_gate_write", "layer1_up_write", "layer1_down_read")
+    labels = ("L0 gate write", "L0 up write", "L0 down read", "L1 gate write", "L1 up write", "L1 down read")
+    for seed, color, marker, offset in ((0, blue, "o", -.08), (1, orange, "^", .08)):
+        bs = [result["maps"][f"seed{seed}_{role}"]["bond"] for role in roles]
+        axes[2].scatter([b["learned"]["p50_mean_curve"] for b in bs], np.arange(6) + offset,
+                        color=color, marker=marker, label=f"learned seed {seed}")
+        axes[2].scatter([b["configuration"]["p50_mean_curve"] for b in bs], np.arange(6) + offset,
+                        color="black", marker="+", s=30, label="same-degree null" if seed == 0 else None)
+    uniform = [m["bond"]["uniform"]["p50_mean_curve"] for m in result["maps"].values()]
+    axes[2].axvspan(min(uniform), max(uniform), color=grey, alpha=.3, label="uniform-null range")
+    axes[2].set_yticks(np.arange(6), labels)
+    axes[2].invert_yaxis()
+    axes[2].set_xlim(.12, .35)
+    axes[2].set_xlabel("Bond retention p at 50% largest-cluster size")
+    axes[2].set_title("C. Degree matching explains both seeds\nAll six MLP coordinate maps", fontsize=10)
+    handles, labels = axes[2].get_legend_handles_labels()
+    fig.legend(handles, labels, fontsize=8, frameon=False, ncol=2,
+               loc="lower center", bbox_to_anchor=(.83, .005))
+    for ax in axes:
+        ax.grid(alpha=.15)
+    fig.suptitle("Saved VPD artifacts: structural sharing percolates; semantic polysemanticity remains unmeasured", fontsize=12)
+    fig.tight_layout(rect=(0, .12, 1, .91))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(path, dpi=180)
+    plt.close(fig)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--figure", type=Path, required=True)
+    ap.add_argument("--overview", type=Path)
+    ap.add_argument("--results-dir", type=Path, default=ROOT / "results/e07")
     args = ap.parse_args()
-    torch.set_num_threads(2)
-    torch.set_num_interop_threads(1)
+    if (args.results_dir / "geometry.json").exists():
+        raise FileExistsError("Completed result exists; choose a fresh --results-dir")
+    peak_memory = limit_host_memory(512)
     started = time.monotonic()
     result = {"exploratory": True, "rng_seed": SEED, "k_values": list(KS),
               "primary_k": BASE_K, "bond_draws": DRAWS, "k_null_draws": K_DRAWS,
@@ -189,11 +288,11 @@ def main():
         assert checkpoint.stat().st_size == retrieval["runs"][str(seed)]["final_checkpoint_bytes"]
         result["checkpoints"].append({"seed": seed, "run_id": run, "path": str(checkpoint),
                                      "verified_sha256": retrieval["runs"][str(seed)]["sha256"]})
-        state = torch.load(checkpoint, map_location="cpu", mmap=True, weights_only=True)
+        state = CheckpointArrays(checkpoint)
         for layer in (0, 1):
             for role, suffix in (("gate_write", "gate_proj.U"), ("up_write", "up_proj.U"), ("down_read", "down_proj.V")):
-                tensor = state[f"_components.model-layers-{layer}-mlp-{suffix}"]
-                a = tensor.numpy().T if role == "down_read" else tensor.numpy()
+                tensor = state.array(f"_components.model-layers-{layer}-mlp-{suffix}")
+                a = tensor.T if role == "down_read" else tensor
                 nonzero = np.max(np.abs(a), axis=1) > 0
                 a = a[nonzero]
                 name = f"seed{seed}_layer{layer}_{role}"
@@ -207,13 +306,17 @@ def main():
                       f"elapsed {time.monotonic()-started:.0f}s", flush=True)
         del state
     result["elapsed_seconds"] = time.monotonic() - started
-    directory = ROOT / "results/e07"
+    result["host_commit_limit_mib"] = 512 if os.name == "nt" else None
+    result["peak_host_commit_before_plot_mib"] = peak_memory()
+    directory = args.results_dir
     directory.mkdir(parents=True, exist_ok=True)
     path = directory / "geometry.json"
     if path.exists():
         raise FileExistsError("Refusing to overwrite a completed exploratory result")
     path.write_text(json.dumps(result, indent=1) + "\n")
     plot(result, args.figure)
+    if args.overview is not None:
+        plot_overview(result, args.overview)
     print(f"Wrote {path} and {args.figure}", flush=True)
 
 

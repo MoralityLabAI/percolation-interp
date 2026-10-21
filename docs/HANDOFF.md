@@ -1,4 +1,4 @@
-# Handoff, 2026-10-22 05:04 Singapore
+# Handoff, 2026-10-22 05:35 Singapore
 
 Snapshot of everything in flight for the next session, human or agent. The repo
 is `MoralityLabAI/percolation-interp` (GitHub, branch `master`); the local checkout
@@ -108,23 +108,26 @@ nothing yet about e05b gate results. The original baseline reproduces within
 `docs/e05_pama_sensitivity.md`; raw rows: `results/e05_pama_sensitivity.json`.
 Existing suite: 62 tests pass.
 
-## e07: component/neuron percolation exploration
+## e07: component/neuron percolation exploration (complete)
 
-The human requested using the saved VPD to explore percolation math applied
-to polysemanticity. New exploratory plan: `docs/e07_design.md`; derivation
-and interpretation limits: `docs/e07_math.md`. The implementation is
-`src/percinterp/polysemanticity.py`, tested against independent sparse graph
-measurements and known fixed points (68 tests total pass). It treats static
-component/coordinate sharing as a structural proxy, not semantic labels.
+Completed the exploratory study requested by the human using both saved VPD
+artifacts. Definitions: `docs/e07_math.md`; fixed protocol:
+`docs/e07_design.md`; observed results: `docs/e07_results.md`. All 12 MLP
+coordinate maps were measured. Degree-preserving rewiring reproduces the
+learned mean percolation curves within 0.0243 largest-cluster fraction on
+the fixed grid; 50%-cluster crossovers differ by at most 0.00197.
+Layer-0 gate writers cross near p=0.15, compared with p=0.33 for uniform
+contacts. This is structural sharing, not measured semantic polysemanticity;
+the top-eight contacts retain only 2.72-3.64% of median direction energy.
 
-`experiments/e07_geometry.py` is queued as a CPU-only job under VRAMorama
-owner `percinterp-e07-geometry`, lease f7c60a48. The system commit-charge
-guard has not admitted it yet; preserve that guard and the existing GPU
-harvest. It will analyze both saved seeds, write `results/e07/geometry.json`,
-and produce a scientific PNG in this chat workspace outputs directory.
-After it completes, inspect actual results/figure, write the exploratory
-results report, and commit task changes locally. Do not duplicate the job
-or claim its mathematical null prediction as an observed artifact result.
+The original e07 bookkeeping lease f7c60a48 was cancelled while still
+waiting. A CPU-only NumPy reader completed the unchanged protocol in 120 s,
+under a 512 MiB process-commit cap (265.5 MiB measured before plotting), without
+CUDA/PyTorch model loading or any GPU guard change. The prior GPU harvest
+continued. 70 tests pass, including independent graph calculations and
+archive-reader compatibility. Raw measurements: `results/e07/geometry.json`;
+figures: `results/e07/overview.png` and `curves.png`. No e07 compute is left
+queued. The e05b/e06 pipeline is separate and remains in progress.
 
 ## Research state
 
@@ -137,6 +140,7 @@ or claim its mathematical null prediction as an observed artifact result.
 | e05 | Same question, position-aware mean-ablation baselines, layers 0-1 | local seed 0 failed the gate at 20k (KL 2.84 vs 1.94, plateau); seed 1 cancelled |
 | e05b | e05 with an 8× batch (32 × 128) on a rented A6000 | both trained and copied; pod deleted; seed 0 gate passes, attribution job admitted |
 | e06 | Null models for the sieve's z-curve: coverage vs alignment | pre-registered; e03 seeds 1-2 confirmatory: P1, P2, P4, P5 pass. Waiting on e05b graphs |
+| e07 | Bipartite percolation of VPD component/neuron sharing | done, both saved seeds: contact degree concentration explains most early structural mixing; semantic labels not measured |
 
 **Discovery findings behind e06** (`docs/e06_exploratory.md`): the small-c excess is
 node-level alignment (Cov term) and the large-c deficit is coverage. The

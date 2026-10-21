@@ -101,7 +101,8 @@ hypotheses. Connectivity alone does not establish mechanistic fidelity.
 - `docs/e06_design.md`: e06 design, pre-registered null-model study of the sieve z-curve
 
 - `docs/e07_math.md`: mathematical link between component/neuron sharing and bipartite percolation
-- `docs/e07_design.md`: exploratory VPD geometry study (artifact run queued; no semantic claims)
+- `docs/e07_design.md`: exploratory VPD geometry study protocol
+- `docs/e07_results.md`: both saved seeds show percolation dominated by component/neuron contact degrees
 
 ## Install
 

@@ -49,3 +49,13 @@ context-level labels would be needed for those stronger interpretations.
 
 Runs on CPU from memory-mapped checkpoints while the separate e05b/e06 GPU
 pipeline continues. Uses no new training, rentals or model downloads.
+
+## Execution note, 2026-10-22
+
+The initially queued GPU-bookkeeping lease for this CPU-only study was
+cancelled before admission. A constrained float32 archive reader mapped
+exactly the required factors without importing PyTorch or loading a target
+model. The CPU process had an OS-enforced 512 MiB commit cap (265.5 MiB peak
+before plotting). All arrays, random seeds, graphs, nulls, sweeps and draws
+were unchanged; this was a memory implementation change, not a scientific
+protocol change. Results: `e07_results.md`.

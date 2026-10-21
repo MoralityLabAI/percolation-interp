@@ -121,7 +121,9 @@ intervene on the proposed component/context pairs, measuring held-out output
 changes. Distinct labels without contribution measurements would be weak;
 static overlap without labels is only structural evidence.
 
-The current e07 experiment is fixed in `e07_design.md`. Its measured artifact
-results are pending while the system-memory admission guard holds its CPU
-job in the VRAMorama queue. No semantic or percolation finding is claimed from
-the mathematical setup alone.
+The e07 experiment is fixed in `e07_design.md`; measured results are in
+`e07_results.md`. Both seeds show structural percolation largely reproduced
+by the degree-preserving null. The lightweight CPU run mapped factor arrays
+without PyTorch under a 512 MiB process-commit cap; GPU admission guards
+remained unchanged. Semantic polysemanticity is still unmeasured, so the
+mathematical setup is not treated as semantic evidence.
