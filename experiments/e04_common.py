@@ -17,6 +17,7 @@ MODEL = "Qwen/Qwen3-0.6B"
 # E04_STEPS=40000 (e04b) or E04_SEED=1 (replication), with their own E04_OUT.
 STEPS = int(os.environ.get("E04_STEPS", 20000))
 SEED = int(os.environ.get("E04_SEED", 0))
+BATCH = os.environ.get("E04_BATCH")  # e05b: decompositions differ from e05's only in batch_size
 # Decomposed layers: e04 used 2-3 (revised from 13-14; docs/e04_design.md); e05 sets E04_SLICE=0,1.
 SLICE = tuple(int(x) for x in os.environ.get("E04_SLICE", "2,3").split(","))
 
@@ -66,7 +67,8 @@ def find_decomposition() -> Path | None:
             continue
         text = cfg.read_text(encoding="utf-8")
         if (f"pretrained_model_name: {MODEL}" in text and re.search(rf"(?m)^steps: {STEPS}$", text)
-                and re.search(rf"(?m)^seed: {SEED}$", text) and all(f"model.layers.{l}." in text for l in SLICE)):
+                and re.search(rf"(?m)^seed: {SEED}$", text) and all(f"model.layers.{l}." in text for l in SLICE)
+                and (BATCH is None or re.search(rf"(?m)^batch_size: {BATCH}$", text))):
             found.append(d)
     done = [d for d in found if (d / f"model_{STEPS}.pth").exists()]
     pool = done or found

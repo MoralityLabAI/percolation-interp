@@ -25,11 +25,17 @@ ROOT = Path(__file__).resolve().parents[1]
 SLICE = "0,1"
 
 
-def seed_env(seed: int, steps: int = 20000) -> dict:
+def seed_env(seed: int, steps: int = 20000, batch: int | None = None) -> dict:
+    """--batch N (e05b): decompositions trained elsewhere at batch N, outputs in out/e05b_seed<N>/."""
     tag = "" if steps == 20000 else f"_{steps // 1000}k"
-    return dict(os.environ, E04_SEED=str(seed), E04_STEPS=str(steps), E04_SLICE=SLICE,
-                E04_OUT=str(ROOT / "out" / f"e05_seed{seed}{tag}"),
-                E04_CONFIG=str(ROOT / "configs" / "e05" / f"vpd_qwen3_0.6b_L0-1_seed{seed}{tag}.yaml"))
+    exp_name = "e05"
+    env = dict(os.environ, E04_SEED=str(seed), E04_STEPS=str(steps), E04_SLICE=SLICE)
+    if batch is not None:
+        tag, exp_name = f"_b{batch}", "e05b"
+        env["E04_BATCH"] = str(batch)
+    env["E04_OUT"] = str(ROOT / "out" / f"{exp_name}_seed{seed}{'' if batch else tag}")
+    env["E04_CONFIG"] = str(ROOT / "configs" / "e05" / f"vpd_qwen3_0.6b_L0-1_seed{seed}{tag}.yaml")
+    return env
 
 
 def run_seed():
@@ -70,6 +76,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--seeds", type=int, nargs="+")
     ap.add_argument("--steps", type=int, default=20000)
+    ap.add_argument("--batch", type=int, default=None, help="e05b: batch size of the (remotely trained) decomposition")
     ap.add_argument("--one-seed", action="store_true", help="internal: run the seed given by E04_SEED")
     args = ap.parse_args()
     if args.one_seed:
@@ -77,7 +84,7 @@ def main():
         return
     for s in args.seeds:
         print(f"=== seed {s}", flush=True)
-        r = subprocess.run([sys.executable, "-u", __file__, "--one-seed"], env=seed_env(s, args.steps), cwd=ROOT)
+        r = subprocess.run([sys.executable, "-u", __file__, "--one-seed"], env=seed_env(s, args.steps, args.batch), cwd=ROOT)
         print(f"=== seed {s} exited with code {r.returncode}", flush=True)
 
 
