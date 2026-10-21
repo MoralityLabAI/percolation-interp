@@ -2,7 +2,8 @@ import numpy as np
 
 from percinterp import LayeredDAG
 from percinterp.controls import complete_layered
-from percinterp.diagnostics import (backbone_anatomy, binned_groups, decompose, double_edge_swaps,
+from percinterp.diagnostics import (backbone_anatomy, binned_groups, decompose, decouple_in_out, degree_determined_share,
+                                    double_edge_swaps,
                                     joint_degree_null, kept_coverage, node_strength, pair_groups,
                                     strength_correlation, uniform_coverage)
 from percinterp.sieve import degree_entry, sieve
@@ -125,3 +126,50 @@ def test_group_labels():
     base = g.edge_layer("dst")
     for lab in np.unique(bg):
         assert len(np.unique(base[bg == lab])) == 1
+
+
+def test_coarser_swap_blocks_keep_total_degrees_and_layer_order():
+    g = skip_graph(5)
+    E = degree_entry(g, g.weight, g.edge_layer("dst"))
+    keep = E <= 2.0
+    s, d = g.src[keep], g.dst[keep]
+    for blocks in ("dst", "src", "none"):
+        s2, d2, acc = double_edge_swaps(g, s, d, np.random.default_rng(1), n_rounds=20, blocks=blocks)
+        assert acc > 0
+        assert np.array_equal(np.bincount(s2, minlength=g.n_nodes), np.bincount(s, minlength=g.n_nodes))
+        assert np.array_equal(np.bincount(d2, minlength=g.n_nodes), np.bincount(d, minlength=g.n_nodes))
+        assert np.all(g.node_layer[s2] < g.node_layer[d2])
+        keys = s2 * g.n_nodes + d2
+        assert len(np.unique(keys)) == len(keys)
+
+
+def test_decouple_keeps_in_edges_and_strength_sequences():
+    g = skip_graph(6)
+    gn = decouple_in_out(g, np.random.default_rng(0))
+    assert np.array_equal(gn.dst, g.dst)
+    s_in, s_out = node_strength(g)
+    t_in, t_out = node_strength(gn)
+    assert np.allclose(s_in, t_in)
+    for l in range(g.n_layers):
+        sl = g.layer_nodes(l)
+        assert np.allclose(np.sort(s_out[sl]), np.sort(t_out[sl]))
+    # same ranks: degree_entry is unchanged by the relabelling
+    E = degree_entry(g, g.weight, g.edge_layer("dst"))
+    assert np.array_equal(E, degree_entry(gn, g.weight, gn.edge_layer("dst")))
+    dn = decompose(g, g.weight, n_shuffles=4, null="decouple")
+    for d in dn.shuffles:
+        assert np.allclose(d.b, d.rF * d.rB + d.cov)
+
+
+def test_degree_determined_share():
+    # one interior layer: membership is exactly "kept in-edge and kept out-edge"
+    g = complete_layered([20, 20, 20], np.random.default_rng(0))
+    E = degree_entry(g, g.weight, g.edge_layer("dst"))
+    for c in (0.3, 1.0, 3.0):
+        d = degree_determined_share(g, E, c)
+        assert d["share_equal"] == 1.0 and d["backbone"] == d["local"]
+    # the rewired graph of the joint-degree test: a0->b0, b0->c1, b1->c0, c0->s. b0 and c0 have
+    # kept in- and out-edges but no source-to-sink path
+    g = LayeredDAG([2, 2, 2, 1], [0, 2, 3, 4], [2, 5, 4, 6], np.ones(4))
+    d = degree_determined_share(g, np.zeros(4), 0.0)
+    assert d["backbone"] == 0.0 and d["local"] == 0.5 and d["share_equal"] == 0.5

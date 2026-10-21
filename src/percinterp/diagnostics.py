@@ -114,11 +114,15 @@ class DecompositionNull:
 
 def decompose(g: LayeredDAG, weight: np.ndarray, groups: np.ndarray | None = None, cs: np.ndarray | None = None,
               n_shuffles: int = 100, rng: np.random.Generator | None = None, nodes: np.ndarray | None = None,
-              null_groups: np.ndarray | None = None) -> DecompositionNull:
-    """Coverage/alignment decomposition of a graph and of its shuffles.
+              null_groups: np.ndarray | None = None, null: str = "shuffle") -> DecompositionNull:
+    """Coverage/alignment decomposition of a graph and of its nulls.
 
-    Uses sieve()'s ranking, grid and shuffle procedure: with the same arguments and rng
-    seed, real.total('b') equals sieve().real and the shuffles' totals equal its shuffles."""
+    null="shuffle": sieve()'s weight shuffles within null_groups. With the same arguments and
+    rng seed, real.total('b') equals sieve().real and the shuffles' totals equal its shuffles.
+    null="decouple": in/out decoupling (decouple_in_out): every node keeps its in-edges, and
+    the out-edge sets are re-dealt among the counted nodes of each layer. Ranks, kept degree
+    sequences and coverage of each layer's in-side are unchanged; only which node's inputs
+    meet which node's outputs is randomised."""
     rng = rng or np.random.default_rng(0)
     groups = g.edge_layer("dst") if groups is None else groups
     weight = np.asarray(weight, dtype=float)
@@ -129,12 +133,35 @@ def decompose(g: LayeredDAG, weight: np.ndarray, groups: np.ndarray | None = Non
     live = weight > 0
     null_groups = groups if null_groups is None else np.asarray(null_groups)
     out = []
+    if null == "decouple":
+        mask = ~(g.sources | g.sinks) if nodes is None else nodes
+        for _ in range(n_shuffles):
+            gn = decouple_in_out(g, rng, mask)
+            ps = profile(gn, E)
+            out.append(decompose_entries(gn, ps.F, ps.B, cs, nodes))
+        return DecompositionNull(real, out)
+    if null != "shuffle":
+        raise ValueError(f"unknown null {null!r}")
     for _ in range(n_shuffles):
         w = np.zeros_like(weight)
         w[live] = permute_within(weight[live], null_groups[live], rng)
         ps = profile(g, degree_entry(g, w, groups))
         out.append(decompose_entries(g, ps.F, ps.B, cs, nodes))
     return DecompositionNull(real, out)
+
+
+def decouple_in_out(g: LayeredDAG, rng: np.random.Generator, nodes: np.ndarray | None = None) -> LayeredDAG:
+    """Same edges and weights, with each out-edge's source relabelled by a random permutation of
+    the `nodes` (default: interior) within its layer. Every node keeps its in-edges; out-edge
+    sets move as wholes between nodes of the same layer. This keeps each layer's in- and
+    out-strength sequences and every rank, and breaks the pairing of a node's inputs with
+    its outputs (the alignment term)."""
+    nodes = ~(g.sources | g.sinks) if nodes is None else np.asarray(nodes, dtype=bool)
+    relabel = np.arange(g.n_nodes)
+    for l in range(g.n_layers):
+        idx = np.flatnonzero(nodes[g.layer_nodes(l)]) + g.offsets[l]
+        relabel[idx] = rng.permutation(idx)
+    return LayeredDAG(g.layer_sizes, relabel[g.src], g.dst, g.weight, sources=g.sources, sinks=g.sinks)
 
 
 # --- 2. node strength ----------------------------------------------------------------------
@@ -222,6 +249,23 @@ def kept_coverage(g: LayeredDAG, entry: np.ndarray, c: float) -> dict:
     return {"c": float(c), "layers": rows}
 
 
+def degree_determined_share(g: LayeredDAG, entry: np.ndarray, c: float, nodes: np.ndarray | None = None) -> dict:
+    """How far the backbone at c is a node-level property.
+
+    Returns the backbone fraction, the fraction of `nodes` with >= 1 kept in-edge and >= 1 kept
+    out-edge, and the share of `nodes` whose backbone membership equals that local condition.
+    At share 1 the backbone is fixed by kept degrees alone, and any degree-preserving rewiring
+    (joint_degree_null) leaves it unchanged."""
+    if nodes is None:
+        nodes = ~(g.sources | g.sinks)
+    p = profile(g, entry)
+    keep = entry <= c
+    local = (np.bincount(g.dst[keep], minlength=g.n_nodes) > 0) & (np.bincount(g.src[keep], minlength=g.n_nodes) > 0)
+    on = p.node_entry <= c
+    return {"c": float(c), "backbone": float(on[nodes].mean()), "local": float(local[nodes].mean()),
+            "share_equal": float((on == local)[nodes].mean())}
+
+
 # --- 4. backbone anatomy ---------------------------------------------------------------------
 
 
@@ -276,20 +320,51 @@ def binary_backbone_fraction(g: LayeredDAG, src: np.ndarray, dst: np.ndarray,
     return float((ne[nodes] <= 0).mean())
 
 
-def double_edge_swaps(g: LayeredDAG, src: np.ndarray, dst: np.ndarray, rng: np.random.Generator,
-                      n_rounds: int = 30, allowed: np.ndarray | None = None) -> tuple[np.ndarray, np.ndarray, float]:
-    """Rewire a simple directed edge set by double-edge swaps within (src layer, dst layer) blocks.
+def _member(x: np.ndarray, sorted_keys: np.ndarray) -> np.ndarray:
+    if len(sorted_keys) == 0:
+        return np.zeros(len(x), dtype=bool)
+    i = np.minimum(np.searchsorted(sorted_keys, x), len(sorted_keys) - 1)
+    return sorted_keys[i] == x
 
-    A swap takes a->b, c->d from the same block and makes a->d, c->b. Every node keeps its
-    in- and out-degree within each block; no multi-edges are created. Each round pairs the
-    block's edges at random and proposes all pairs' swaps at once; a proposal is rejected
-    if a new edge already exists, is proposed twice, or (if `allowed` keys are given) is
-    not in `allowed` (edge keys src * n_nodes + dst). Returns (src, dst, acceptance rate).
+
+def swap_blocks(g: LayeredDAG, src: np.ndarray, dst: np.ndarray, blocks: str = "pair") -> np.ndarray:
+    """Block label per edge for double_edge_swaps.
+
+    "pair": (src layer, dst layer), keeping each node's in- and out-degree per block;
+    "dst": dst layer, keeping each node's in-degree and its out-degree per dst layer;
+    "src": src layer, keeping each node's out-degree and its in-degree per src layer;
+    "none": one block, keeping only each node's total in- and out-degree."""
+    if blocks == "pair":
+        return g.node_layer[src] * g.n_layers + g.node_layer[dst]
+    if blocks == "dst":
+        return g.node_layer[dst]
+    if blocks == "src":
+        return g.node_layer[src]
+    if blocks == "none":
+        return np.zeros(len(src), dtype=np.int64)
+    raise ValueError(f"unknown blocks {blocks!r}")
+
+
+def double_edge_swaps(g: LayeredDAG, src: np.ndarray, dst: np.ndarray, rng: np.random.Generator,
+                      n_rounds: int = 30, allowed: np.ndarray | None = None,
+                      blocks: str = "pair") -> tuple[np.ndarray, np.ndarray, float]:
+    """Rewire a simple directed edge set by double-edge swaps within blocks (swap_blocks).
+
+    A swap takes a->b, c->d from the same block and makes a->d, c->b. With blocks="pair"
+    (default) every node keeps its in- and out-degree within each (src layer, dst layer)
+    block; no multi-edges are created, and new edges must point to a later layer. Each
+    round pairs the block's edges at random and proposes all pairs' swaps at once; a
+    proposal is rejected if a new edge already exists, is proposed twice, goes backwards,
+    or (if `allowed` keys are given) is not in `allowed` (edge keys src * n_nodes + dst).
+    Returns (src, dst, acceptance rate).
     """
     src, dst = np.array(src, dtype=np.int64), np.array(dst, dtype=np.int64)
     N = g.n_nodes
-    block = g.node_layer[src] * g.n_layers + g.node_layer[dst]
-    allowed = None if allowed is None else np.unique(np.asarray(allowed, dtype=np.int64))
+    block = swap_blocks(g, src, dst, blocks)
+    if allowed is not None:
+        allowed = np.asarray(allowed, dtype=np.int64)
+        if len(allowed) > 1 and not np.all(allowed[1:] > allowed[:-1]):
+            allowed = np.sort(allowed)
     tried = accepted = 0
     for _ in range(n_rounds):
         perm = rng.permutation(len(src))
@@ -301,17 +376,18 @@ def double_edge_swaps(g: LayeredDAG, src: np.ndarray, dst: np.ndarray, rng: np.r
         first = np.flatnonzero((pos % 2 == 0) & (np.r_[bl[1:] == bl[:-1], False]))
         i, j = perm[first], perm[first + 1]
         ok = (src[i] != src[j]) & (dst[i] != dst[j])
+        ok &= (g.node_layer[src[i]] < g.node_layer[dst[j]]) & (g.node_layer[src[j]] < g.node_layer[dst[i]])
         k1 = src[i] * N + dst[j]
         k2 = src[j] * N + dst[i]
-        keys = src * N + dst
-        ok &= ~np.isin(k1, keys) & ~np.isin(k2, keys)
+        keys = np.sort(src * N + dst)
+        ok &= ~_member(k1, keys) & ~_member(k2, keys)
         if allowed is not None:
-            ok &= np.isin(k1, allowed) & np.isin(k2, allowed)
-        new = np.concatenate([k1[ok], k2[ok]])
-        u, cnt = np.unique(new, return_counts=True)
-        dup = u[cnt > 1]
+            ok &= _member(k1, allowed) & _member(k2, allowed)
+        new = np.sort(np.concatenate([k1[ok], k2[ok]]))
+        dup = new[1:][new[1:] == new[:-1]]
         if len(dup):
-            ok &= ~(np.isin(k1, dup) | np.isin(k2, dup))
+            dup = np.sort(dup)
+            ok &= ~(_member(k1, dup) | _member(k2, dup))
         tried += len(i)
         accepted += int(ok.sum())
         di, dj = dst[i[ok]].copy(), dst[j[ok]].copy()
@@ -330,7 +406,7 @@ class JointDegreeNull:
     @property
     def z(self) -> float:
         sd = self.null.std()
-        return float((self.real - self.null.mean()) / sd) if sd > 0 else float("nan")
+        return float((self.real - self.null.mean()) / sd) if sd > 1e-12 else float("nan")
 
     @property
     def p_high(self) -> float:
@@ -343,19 +419,20 @@ class JointDegreeNull:
 
 def joint_degree_null(g: LayeredDAG, entry: np.ndarray, c: float, n_null: int = 100,
                       rng: np.random.Generator | None = None, n_rounds: int = 30, skeleton: bool = True,
-                      nodes: np.ndarray | None = None) -> JointDegreeNull:
+                      nodes: np.ndarray | None = None, blocks: str = "pair") -> JointDegreeNull:
     """Backbone fraction at c against kept graphs rewired with every node's kept degrees fixed.
 
     entry: the sieve's degree-unit keys (degree_entry). skeleton=True only allows swaps onto
-    edges that exist (finite entry) in the original graph, like the weight shuffles."""
+    edges that exist (finite entry) in the original graph, like the weight shuffles. blocks:
+    "pair" (the joint-degree null proper) or a coarser constraint (see swap_blocks)."""
     rng = rng or np.random.default_rng(0)
     keep = entry <= c
     s, d = g.src[keep], g.dst[keep]
     real = binary_backbone_fraction(g, s, d, nodes)
-    allowed = (g.src[np.isfinite(entry)] * g.n_nodes + g.dst[np.isfinite(entry)]) if skeleton else None
+    allowed = np.sort(g.src[np.isfinite(entry)] * g.n_nodes + g.dst[np.isfinite(entry)]) if skeleton else None
     vals, acc = [], []
     for _ in range(n_null):
-        s2, d2, a = double_edge_swaps(g, s, d, rng, n_rounds=n_rounds, allowed=allowed)
+        s2, d2, a = double_edge_swaps(g, s, d, rng, n_rounds=n_rounds, allowed=allowed, blocks=blocks)
         vals.append(binary_backbone_fraction(g, s2, d2, nodes))
         acc.append(a)
     return JointDegreeNull(float(c), real, np.array(vals), int(keep.sum()), float(np.mean(acc)))
