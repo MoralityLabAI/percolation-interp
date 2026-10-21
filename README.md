@@ -7,6 +7,7 @@ three questions:
 - How do trained graphs differ from shuffled and at-init controls?
 - Does circuit formation show up as a connectivity event?
 
+- `docs/HANDOFF.md`: live processes and state as of 2026-10-21 (read first when resuming)
 - `docs/plan.md`: the research plan, with predictions written before running
 - `docs/literature.md`: prior-art check (October 2026)
 - `docs/e01_controls.md`: step 1 results (control pipeline)
