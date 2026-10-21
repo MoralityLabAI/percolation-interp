@@ -1,4 +1,4 @@
-# Handoff, 2026-10-21 16:00
+# Handoff, 2026-10-22 01:48 Singapore
 
 Snapshot of everything in flight for the next session, human or agent. The repo
 is `MoralityLabAI/percolation-interp` (GitHub, branch `master`); the local checkout
@@ -10,64 +10,58 @@ after seeing results; log deviations in the design doc.
 
 ## Live processes
 
-### 1. e05b: VPD training on a Prime Intellect pod (costs money)
+### 1. e05b: both remote training runs complete; paid pod deleted
 
-- **Pod:** `a818c7656db149eba8122c9956b20f85`
-  - RTX A6000 48 GB, MassedCompute, $0.54/h, rented 2026-10-21 about 08:05.
-  - SSH: `ssh -i ~/.ssh/id_ed25519_prime ubuntu@64.247.206.119`
-- **What's running:**
-  - `~/param-decomp` with its own `.venv`: Python 3.13, packages pinned to the local
-    versions, e.g. transformers 4.57.3 and wandb 0.23.1.
-  - Seed 0: config `~/e05b/vpd_qwen3_0.6b_L0-1_seed0_b32.yaml`, log `~/e05b/seed0.log`,
-    run dir `~/param_decomp_out/decompositions/p-7e116244`. At 15:59 it was at step
-    18,664/20,001, 1.42 s/step, so done about 16:30.
-  - Seed 1 starts automatically when seed 0's Python process exits: a `bash` loop
-    waiting on PID 4740 runs the `seed1_b32` config, log `~/e05b/seed1.log`.
-    About 7.9 h, so done about 00:30 Thursday.
-  - `p-bad7e278` on the pod is the dead batch-64 run (out of memory); ignore it.
-- **Check progress:**
+- Pod `a818c7656db149eba8122c9956b20f85` was deleted by the original fetcher
+  at 2026-10-22 01:14 Singapore. A successful Prime API list confirmed its
+  absence at 01:15:47; independent follow-up lists also returned no pods.
+  No new pod, training extension, or deadline extension was requested.
+- Both complete run directories (70 files total) are local under
+  `C:\Users\patri\param_decomp_out\decompositions\`:
+  seed 0 `p-7e116244`, seed 1 `p-06edd191`. Both are layers 0-1, batch 32,
+  20,000 steps. Every manifest filename/size was checked; both final checkpoints
+  (2,528,576,999 bytes each) matched SHA-256 hashes captured on the remote pod.
+  Evidence and hashes: `results/e05b_retrieval.json`.
+- Full copies completed at 00:57 (seed 0) and 01:14 (seed 1). Fetch log:
+  `out/e05b/fetch_2.log`. SSH failure alone was not used as deletion evidence.
+- The original 02:30 cutoff was never changed. There is no paid compute left
+  to guard; do not relaunch the old pod fetcher/watchdog or rent a replacement.
 
-      ssh -i ~/.ssh/id_ed25519_prime ubuntu@64.247.206.119 'tail -c 300 ~/e05b/seed1.log'
+### 2. Local follow-through and resource state
 
-- **Budget:** wallet $25.41 at the start; about $10 expected in total. The user
-  approved spending it on this.
+- The original e05b driver is running under VRAMorama; seed 0's gate and stats
+  completed. Its 13 GiB attribution lease is waiting for memory.
+- At the follow-up check an unrelated idle `nlsteer-text` process (PID 30092) still held
+  about 3.8 GiB, leaving about 11.5 GiB available. A question asking the human
+  whether to stop it is pending. Do not infer permission to stop it, change
+  attribution batch/sample counts, or bypass VRAMorama admission.
+- A small follow-through supervisor is already running (owner
+  `e05b-followthrough`); log `out/e05b/followthrough.log`. Its temporary script
+  and manifest live in the Codex chat workspace's `work/` directory. It verified
+  copies/deletion, waits for the existing driver to finish, fills any missing
+  analysis stages without ever training, then runs the remaining e06 checks.
+  Do not launch a duplicate supervisor or driver.
+- The two new `param-decomp-p-...` directories in `param_decomp_out/runs/` are
+  directory junctions to their matching decomposition folders, avoiding about
+  5 GB of duplicate final checkpoints. Preserve these targets.
+- Disk space after full retrieval was about 3 GB. Unused intermediate
+  checkpoints were losslessly compressed in place: model_5000.pth for both
+  seeds and seed 0 model_10000.pth. SHA-256 was identical before and after
+  each compression; free space increased to about 7.18 GB. No checkpoint
+  contents were discarded or changed.
+- The human requested sparse agent follow-ups, roughly four hours for the
+  remaining analysis, rather than ten-minute polling. Do not push or publish;
+  commit completed local results/docs after appropriate checks, staging only
+  task files and leaving unrelated changes untouched.
 
-### 2. Local guards for the pod, detached on this PC
 
-Run with the Prime CLI venv's Python, `C:\Users\patri\.venvs\prime\Scripts\python.exe`.
+### 3. e05b local analysis (started; seed 0 attributions queued)
 
-- **`cloud/pod_watchdog.py`** deletes the pod at the Unix time in
-  `out/e05b/pod_deadline.txt`, currently **Thu 2026-10-22 02:30**. Log:
-  `out/e05b/pod_watchdog_2.log`.
-- **`cloud/e05b_fetch.py`** polls the pod every 10 min. When both seeds have
-  `model_20000.pth`, or training stops with at least one finished, it:
-  - copies the run dirs to `~/param_decomp_out/decompositions/`;
-  - checks the checkpoint sizes;
-  - deletes the pod;
-  - starts the local analysis: `experiments/e05_pipeline.py --seeds .. --batch 32`,
-    detached, log `out/e05b/pipeline.log`.
-
-  Fetcher log: `out/e05b/fetch_2.log`.
-- **Pitfall:** both guards died once when the Claude session restarted (12:03 today)
-  and were relaunched. **After any restart, check they're alive:**
-
-      powershell "Get-CimInstance Win32_Process -Filter \"Name='python.exe'\" | ? { $_.CommandLine -like '*pod_watchdog*' -or $_.CommandLine -like '*e05b_fetch*' }"
-
-  Relaunch commands:
-
-      vramorama run --vram 64M --owner e05b-pod-watchdog --detach --out <repo>/out/e05b/pod_watchdog_3.log -- C:/Users/patri/.venvs/prime/Scripts/python.exe -u <repo>/cloud/pod_watchdog.py a818c7656db149eba8122c9956b20f85 <repo>/out/e05b/pod_deadline.txt
-      vramorama run --vram 64M --owner e05b-fetch --detach --out <repo>/out/e05b/fetch_3.log -- C:/Users/patri/.venvs/prime/Scripts/python.exe -u <repo>/cloud/e05b_fetch.py a818c7656db149eba8122c9956b20f85 ubuntu@64.247.206.119
-
-  `vramorama` is `C:\Users\patri\AppData\Local\Programs\vramorama\vramorama.exe`.
-- **Manual pod control:**
-
-      C:/Users/patri/.venvs/prime/Scripts/python.exe cloud/prime_pod.py status|delete a818c7656db149eba8122c9956b20f85
-
-  Set `PRIME_DISABLE_VERSION_CHECK=1 PYTHONIOENCODING=utf-8` first. If the CLI's
-  auth has expired, run `prime login --headless` and open its link in **Firefox**
-  (the user's preference, not the in-app browser).
-
-### 3. e05b local analysis (starts automatically after the fetch, about 00:40)
+Seed 0 passed the gate: CI-masked KL 1.763079 versus limit 1.943471
+(KL_PAMA 7.773885); stats.pt is present. Seed 1 gate is still pending.
+The queued attribution stage has not run. For e06, both graphs count even if
+a gate fails: harvest their stats/attributions without scoring failed seeds
+on e05 Q1-Q4. Never retrain e05b.
 
 Per seed, under vramorama leases with watchdogs (the e05 driver):
 1. Gate: `e05_gate.py`, KL(CI-masked) ≤ 0.25 × KL_PAMA. If it fails, Q1-Q4 are not scored.
@@ -122,7 +116,7 @@ Existing suite: 62 tests pass.
 | e03 | Toy model, VPD + SAE sieve | done, three seeds: VPD sieve + causal pass, SAE fails |
 | e04 | Transfer to Qwen3-0.6B, layers 2-3 | done, two seeds: **not transfer**, Q1 fails. Addendum: about 94% of the zero-ablation gap is the position-0 massive activation, and the causal effect is one attention-sink pair |
 | e05 | Same question, position-aware mean-ablation baselines, layers 0-1 | local seed 0 failed the gate at 20k (KL 2.84 vs 1.94, plateau); seed 1 cancelled |
-| e05b | e05 with an 8× batch (32 × 128) on a rented A6000 | **training**; see above |
+| e05b | e05 with an 8× batch (32 × 128) on a rented A6000 | both trained and copied; pod deleted; seed 0 gate passes, analysis queued |
 | e06 | Null models for the sieve's z-curve: coverage vs alignment | pre-registered; e03 seeds 1-2 confirmatory: P1, P2, P4, P5 pass. Waiting on e05b graphs |
 
 **Discovery findings behind e06** (`docs/e06_exploratory.md`): the small-c excess is
