@@ -244,8 +244,8 @@ def joint_degree(g, E, sampler: str, n: int, mix_n: int) -> tuple[dict, dict]:
             rec["mixing_check"] = {
                 "n_sequential": mix_n, "sequential": jd_summary(q),
                 "mean_diff": float(b.mean() - a.mean()),
-                "mean_diff_z": float((b.mean() - a.mean()) / se) if se > 0 else None,
-                "sd_ratio": float(b.std() / a.std()) if a.std() > 0 else None,
+                "mean_diff_z": float((b.mean() - a.mean()) / se) if spread and se > 0 else None,
+                "sd_ratio": float(b.std() / a.std()) if spread and a.max() > a.min() else None,
                 "ks_stat": float(ks.statistic) if ks is not None else 0.0,
                 "ks_p": float(ks.pvalue) if ks is not None else 1.0,
                 "p_high_sequential": q.p_high, "seconds": time.time() - t}

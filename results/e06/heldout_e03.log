@@ -1,0 +1,38 @@
+﻿[e03_seed1] e03: 5333 nodes, 3668384 edges, 14 layers, 3758 sources, 1574 interior; load 8s
+[e03_seed1] N-WL: c_s: db +0.0520 = cov +0.0170 + align +0.0350, z 16.4, p_high 0.0010 | c_1: db -0.2182 = cov -0.2182 + align +0.0000, z -29.4, p_high 1.0000 | c_L: db -0.2824 = cov -0.2824 + align +0.0000, z -98.2, p_high 1.0000 | grid z_peak 26.13 (null max 5.57, p 0.0010); 1589s
+[e03_seed1] N-OS: c_s: db +0.0579 = cov +0.0228 + align +0.0350, z 20.2, p_high 0.0010 | c_1: db +0.0011 = cov +0.0011 + align +0.0000, z 0.2, p_high 0.4316 | c_L: db -0.0024 = cov -0.0024 + align +0.0000, z -2.1, p_high 0.9750 | grid z_peak 44.95 (null max 8.03, p 0.0010); 1953s
+[e03_seed1] N-IS: c_s: db +0.0537 = cov +0.0186 + align +0.0351, z 17.8, p_high 0.0010 | c_1: db -0.2392 = cov -0.2392 + align +0.0000, z -40.5, p_high 1.0000 | c_L: db -0.2826 = cov -0.2826 + align +0.0000, z -117.2, p_high 1.0000 | grid z_peak 28.31 (null max 5.63, p 0.0010); 1574s
+[e03_seed1] N-LP: c_s: db +0.0487 = cov +0.0138 + align +0.0350, z 10.6, p_high 0.0010 | c_1: db -0.1761 = cov -0.1761 + align +0.0000, z -24.6, p_high 1.0000 | c_L: db -0.2752 = cov -0.2752 + align +0.0000, z -82.8, p_high 1.0000 | grid z_peak 28.57 (null max 4.71, p 0.0010); 1585s
+[e03_seed1] N-AB: c_s: db +0.0287 = cov +0.0070 + align +0.0218, z 6.3, p_high 0.0010 | c_1: db -0.0004 = cov -0.0004 + align -0.0000, z -0.1, p_high 0.5514 | c_L: db -0.0371 = cov -0.0371 + align +0.0000, z -9.0, p_high 1.0000 | grid z_peak 10.65 (null max 5.20, p 0.0010); 1299s
+[e03_seed1] N-DC: c_s: db +0.0545 = cov +0.0194 + align +0.0351, z 20.4, p_high 0.0010 | c_1: db +0.0001 = cov +0.0001 + align -0.0000, z 0.1, p_high 0.9271 | c_L: db -0.0000 = cov -0.0000 + align +0.0000, z -0.0, p_high 1.0000 | grid z_peak 30.98 (null max 4.95, p 0.0010); 276s
+[e03_seed1] P5 strength: rho +0.636 (p 0.0010, perm max +0.079), given rate -0.019; 0s
+  N-JD c_s (parallel): real 0.0610, null 0.0590 +- 0.0012 [0.0546, 0.0623], p_high 0.0789, 3306 edges, acceptance 0.334, S 0.9956; 33s
+  mixing check c_s: sequential 0.0591 +- 0.0013 [0.0553, 0.0629] (acceptance 0.374) vs parallel 0.0590 +- 0.0012; KS p 0.745; 12s
+  N-JD c_1 (parallel): real 0.4460, null 0.4460 +- 0.0000 [0.4460, 0.4460], p_high 1.0000, 33113 edges, acceptance 0.187, S 1.0000; 332s
+  mixing check c_1: sequential 0.4460 +- 0.0000 [0.4460, 0.4460] (acceptance 0.219) vs parallel 0.4460 +- 0.0000; KS p 1.000; 133s
+e03_seed1 [e03]
+  P1 pass: db +0.0520, alignment +0.0350, coverage +0.0170 (share 0.674)
+  P2 pass: real 0.0610 vs N-DC 0.0065 +- 0.0027, z 20.4, p 0.0010; grid max-stat z 31.0, p 0.0010
+  P3 pass (reported only): z -98.2, db -0.2824 = coverage -0.2824 + alignment +0.0000; drF +0.0003, drB -0.2827
+  P4 pass: c_s: testable, real 0.0610 vs 0.0590 +- 0.0012, p 0.0789, S 0.9956; c_1: not testable, real 0.4460 vs 0.4460 +- 0.0000, p 1.0000, S 1.0000
+  P5 pass: rho +0.636 (p 0.0010), given rate -0.019 (ratio -0.03)
+[e03_seed1] wrote C:\Users\patri\Documents\GitHub\MoralityLabAI\percolation-interp\.claude\worktrees\agent-aa23bb7da98c92697\results\e06\heldout_e03_seed1.json and C:\Users\patri\Documents\GitHub\MoralityLabAI\percolation-interp\.claude\worktrees\agent-aa23bb7da98c92697\out\e06_heldout\e03_seed1\draws.npz; total 8796s
+[e03_seed2] e03: 5349 nodes, 3683200 edges, 14 layers, 3766 sources, 1582 interior; load 9s
+[e03_seed2] N-WL: c_s: db +0.0580 = cov +0.0198 + align +0.0382, z 17.8, p_high 0.0010 | c_1: db -0.2286 = cov -0.2286 + align +0.0000, z -29.3, p_high 1.0000 | c_L: db -0.2837 = cov -0.2837 + align +0.0000, z -98.5, p_high 1.0000 | grid z_peak 28.59 (null max 5.59, p 0.0010); 1148s
+[e03_seed2] N-OS: c_s: db +0.0637 = cov +0.0255 + align +0.0381, z 21.9, p_high 0.0010 | c_1: db -0.0107 = cov -0.0107 + align +0.0000, z -2.3, p_high 0.9890 | c_L: db -0.0001 = cov -0.0001 + align +0.0000, z -0.1, p_high 0.6983 | grid z_peak 46.13 (null max 7.78, p 0.0010); 1135s
+[e03_seed2] N-IS: c_s: db +0.0595 = cov +0.0213 + align +0.0382, z 18.4, p_high 0.0010 | c_1: db -0.2377 = cov -0.2377 + align -0.0000, z -40.2, p_high 1.0000 | c_L: db -0.2863 = cov -0.2863 + align +0.0000, z -123.5, p_high 1.0000 | grid z_peak 28.67 (null max 5.81, p 0.0010); 1363s
+[e03_seed2] N-LP: c_s: db +0.0559 = cov +0.0177 + align +0.0382, z 13.0, p_high 0.0010 | c_1: db -0.1832 = cov -0.1832 + align +0.0000, z -26.4, p_high 1.0000 | c_L: db -0.2727 = cov -0.2727 + align +0.0000, z -74.7, p_high 1.0000 | grid z_peak 32.49 (null max 5.50, p 0.0010); 1535s
+[e03_seed2] N-AB: c_s: db +0.0337 = cov +0.0092 + align +0.0245, z 7.4, p_high 0.0010 | c_1: db +0.0045 = cov +0.0045 + align -0.0000, z 1.0, p_high 0.1878 | c_L: db -0.0331 = cov -0.0331 + align +0.0000, z -8.1, p_high 1.0000 | grid z_peak 11.86 (null max 4.58, p 0.0010); 1026s
+[e03_seed2] N-DC: c_s: db +0.0604 = cov +0.0223 + align +0.0381, z 21.3, p_high 0.0010 | c_1: db +0.0000 = cov +0.0000 + align -0.0000, z 0.0, p_high 0.9870 | c_L: db +0.0000 = cov +0.0000 + align +0.0000, z -0.0, p_high 1.0000 | grid z_peak 30.69 (null max 7.27, p 0.0010); 244s
+[e03_seed2] P5 strength: rho +0.634 (p 0.0010, perm max +0.083), given rate +0.003; 0s
+  N-JD c_s (parallel): real 0.0670, null 0.0651 +- 0.0011 [0.0607, 0.0683], p_high 0.0729, 3312 edges, acceptance 0.303, S 0.9981; 31s
+  mixing check c_s: sequential 0.0649 +- 0.0012 [0.0613, 0.0683] (acceptance 0.333) vs parallel 0.0651 +- 0.0011; KS p 0.173; 11s
+  N-JD c_1 (parallel): real 0.4368, null 0.4368 +- 0.0000 [0.4368, 0.4368], p_high 1.0000, 33189 edges, acceptance 0.182, S 1.0000; 326s
+  mixing check c_1: sequential 0.4368 +- 0.0000 [0.4368, 0.4368] (acceptance 0.214) vs parallel 0.4368 +- 0.0000; KS p 1.000; 136s
+e03_seed2 [e03]
+  P1 pass: db +0.0580, alignment +0.0382, coverage +0.0198 (share 0.658)
+  P2 pass: real 0.0670 vs N-DC 0.0066 +- 0.0028, z 21.3, p 0.0010; grid max-stat z 30.7, p 0.0010
+  P3 pass (reported only): z -98.5, db -0.2837 = coverage -0.2837 + alignment +0.0000; drF +0.0025, drB -0.2862
+  P4 pass: c_s: testable, real 0.0670 vs 0.0651 +- 0.0011, p 0.0729, S 0.9981; c_1: not testable, real 0.4368 vs 0.4368 +- 0.0000, p 1.0000, S 1.0000
+  P5 pass: rho +0.634 (p 0.0010), given rate +0.003 (ratio 0.004)
+[e03_seed2] wrote C:\Users\patri\Documents\GitHub\MoralityLabAI\percolation-interp\.claude\worktrees\agent-aa23bb7da98c92697\results\e06\heldout_e03_seed2.json and C:\Users\patri\Documents\GitHub\MoralityLabAI\percolation-interp\.claude\worktrees\agent-aa23bb7da98c92697\out\e06_heldout\e03_seed2\draws.npz; total 6966s
