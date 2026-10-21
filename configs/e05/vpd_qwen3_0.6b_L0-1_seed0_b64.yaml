@@ -1,0 +1,138 @@
+# e04 VPD of a Qwen3-0.6B slice: layers 2 and 3 (of 28; revised from 13-14, see docs/e04_design.md), all seven projections each, rest frozen.
+# Loss recipe and CI function as e03 (configs/e03/vpd_ss_llama_2L128.yaml); C sized per projection;
+# bf16 autocast; text from NeelNanda/pile-10k with the last 5% held out. Steps, batch and sequence
+# length are set for the 16 GB shared card. A first smoke test at batch 8 x 256 tokens used 14.7 GB and
+# stalled, so batch is 4 x 128 tokens and the PGD reconstruction eval is dropped.
+wandb_project: null
+wandb_run_name: null
+wandb_run_name_prefix: ''
+seed: 0
+n_mask_samples: 1
+ci_config:
+  mode: global
+  fn_type: global_shared_transformer
+  hidden_dims: null
+  reader_hidden_dims: null
+  d_resid_ci_fn: null
+  block_groups: null
+  transition_attn_config: null
+  transition_hidden_dim: null
+  simple_transformer_ci_cfg:
+    d_model: 256
+    n_blocks: 2
+    mlp_hidden_dim:
+    - 1024
+    attn_config:
+      n_heads: 4
+      max_len: 1024
+      rope_base: 10000.0
+sampling: continuous
+sigmoid_type: leaky_hard
+module_info:
+- module_pattern: model.layers.0.self_attn.q_proj
+  C: 512
+- module_pattern: model.layers.0.self_attn.k_proj
+  C: 256
+- module_pattern: model.layers.0.self_attn.v_proj
+  C: 256
+- module_pattern: model.layers.0.self_attn.o_proj
+  C: 512
+- module_pattern: model.layers.0.mlp.gate_proj
+  C: 768
+- module_pattern: model.layers.0.mlp.up_proj
+  C: 768
+- module_pattern: model.layers.0.mlp.down_proj
+  C: 768
+- module_pattern: model.layers.1.self_attn.q_proj
+  C: 512
+- module_pattern: model.layers.1.self_attn.k_proj
+  C: 256
+- module_pattern: model.layers.1.self_attn.v_proj
+  C: 256
+- module_pattern: model.layers.1.self_attn.o_proj
+  C: 512
+- module_pattern: model.layers.1.mlp.gate_proj
+  C: 768
+- module_pattern: model.layers.1.mlp.up_proj
+  C: 768
+- module_pattern: model.layers.1.mlp.down_proj
+  C: 768
+identity_module_info: null
+use_delta_component: true
+autocast_bf16: true
+loss_metric_configs:
+- coeff: 1000000.0
+  classname: FaithfulnessLoss
+- coeff: 0.003
+  classname: ImportanceMinimalityLoss
+  pnorm: 2.0
+  beta: 0.1
+  p_anneal_start_frac: 0.0
+  p_anneal_final_p: 0.5
+  p_anneal_end_frac: 1.0
+  eps: 1.0e-12
+- coeff: 0.5
+  classname: StochasticReconSubsetLoss
+  routing:
+    type: uniform_k_subset
+- coeff: 0.5
+  classname: PersistentPGDReconSubsetLoss
+  optimizer:
+    type: adam
+    lr: 0.01
+    beta1: 0.8
+    beta2: 0.99
+    eps: 1.0e-08
+  scope: unique_per_batch_per_token
+  routing:
+    type: uniform_k_subset
+output_loss_type: kl
+lr_schedule:
+  start_val: 0.0003
+  warmup_pct: 0.0
+  final_val_frac: 0.1
+  fn_type: cosine
+steps: 20000
+batch_size: 64
+gradient_accumulation_steps: 1
+grad_clip_norm_components: 0.01
+grad_clip_norm_ci_fns: null
+faithfulness_warmup_steps: 200
+faithfulness_warmup_lr: 0.001
+faithfulness_warmup_weight_decay: 0.0
+train_log_freq: 100
+eval_freq: 1000
+eval_batch_size: 4
+slow_eval_freq: 5000
+n_eval_steps: 5
+slow_eval_on_first_step: false
+save_freq: 5000
+eval_metric_configs:
+- classname: CI_L0
+  groups:
+    layer_2:
+    - model.layers.0.*
+    layer_3:
+    - model.layers.1.*
+    total:
+    - '*'
+- classname: CEandKLLosses
+  rounding_threshold: 0.0
+- classname: CIMeanPerComponent
+ci_alive_threshold: 0.0
+pretrained_model_class: transformers.Qwen3ForCausalLM
+pretrained_model_path: null
+pretrained_model_name: Qwen/Qwen3-0.6B
+output_extract: logits
+tokenizer_name: Qwen/Qwen3-0.6B
+task_config:
+  task_name: lm
+  max_seq_len: 128
+  buffer_size: 1000
+  dataset_name: NeelNanda/pile-10k
+  column_name: text
+  train_data_split: train[:95%]
+  eval_data_split: train[95%:]
+  shuffle_each_epoch: true
+  is_tokenized: false
+  streaming: false
