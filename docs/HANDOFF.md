@@ -101,6 +101,18 @@ the fetch.
   Then write `docs/e06_results.md`. A prediction holds only if it passes on every
   held-out graph it applies to; P3 counts on the e05b graphs only.
 
+## Local exploratory baseline check, 2026-10-21
+
+Completed a target-only PAMA sampling diagnostic through a 6 GiB VRAMorama lease
+while remote e05b training continued. Layers 0-1 KL_PAMA varied by less than 1%
+across means estimated from 64, 256 and 1,024 stats rows, evaluated on the same
+512 causal rows; implied thresholds ranged from 1.91456 to 1.93315 nats. This
+sensitivity does not explain the earlier e05 failure at KL 2.84335, and says
+nothing yet about e05b gate results. The original baseline reproduces within
+6.75e-7 nats. No gate, slice or sample-count settings were changed. Details:
+`docs/e05_pama_sensitivity.md`; raw rows: `results/e05_pama_sensitivity.json`.
+Existing suite: 62 tests pass.
+
 ## Research state
 
 | Exp | Question | Status |
