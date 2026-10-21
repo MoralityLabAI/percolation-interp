@@ -45,3 +45,15 @@ equivalent), because the estimated peak is about 31 GB.
 Each seed is scored only if it passes its gate. If both seeds fail at batch 64, e05b
 reports that VPD at this budget does not decompose layers 0-1 beyond their
 constants. No further retrains are pre-registered.
+
+## Deviation, 2026-10-21 08:35, before any e05b decomposition existed
+
+Batch 64 does not fit on the rented 48 GB A6000. The first training step ran out of
+memory at 43.8 GB in use, while allocating a further 4.6 GB full-vocabulary KL tensor.
+- The ~31 GB estimate came from extrapolating two local measurements linearly.
+- The loss keeps several full-vocabulary tensors per step, which the extrapolation
+  understated.
+
+The batch drops to **32 × 128**, the fallback size already fixed above (there it was
+fixed for cost). That is still 8× e05's batch: 82M tokens over 20k steps.
+Nothing else changes. Configs: `configs/e05/vpd_qwen3_0.6b_L0-1_seed{0,1}_b32.yaml`.
