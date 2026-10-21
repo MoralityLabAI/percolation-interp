@@ -129,16 +129,28 @@ archive-reader compatibility. Raw measurements: `results/e07/geometry.json`;
 figures: `results/e07/overview.png` and `curves.png`. No e07 compute is left
 queued. The e05b/e06 pipeline is separate and remains in progress.
 
-## e08: contextual follow-up (draft only)
+## e08: implemented, deferred until e05b/e06 finishes
 
-The human proposed testing whether e07's high-contact coordinates share
-causal responsibility for unrelated contextual families. The proposed
-protocol is `docs/e08_design.md`: fixed neurons 196 (layer-0 gate), 33
-(layer-1 gate), and 1037 (layer-1 up), with held-out signed interventions
-and an explicitly defined all-energy percolation companion. No e08 compute
-or implementation has started. Labeling, feature scores, hook validation
-and resource budgets remain to be frozen before execution. Finish e05b/e06
-first; do not change their scientific criteria or compete for their GPU.
+The human authorized local execution using saved artifacts after e05b/e06.
+Protocol: `docs/e08_design.md`; native deferred driver:
+`experiments/e08_pipeline.py --wait-for-e05b-e06`. It uses VRAMorama, never
+trains/rents/downloads, and refuses to compete with the original workers.
+Before releasing it, finish/review e05b/e06, write `docs/e06_results.md`,
+commit that work locally, and create `results/e08/prerequisites_reviewed.json`
+with the verified local commit in `e06_commit`. The driver checks actual
+worker exits as well as result files and the prior supervisor's success.
+
+Then it runs the fixed all-energy geometry and both context harvests. It
+pauses with `out/e08/status.json` state `awaiting_blinded_review` if
+`out/e08/labels.json` is absent. Review `out/e08/blinded_contexts.json` only,
+following the frozen annotation rules; do not inspect contribution groups
+or intervention effects to choose labels. A single agent reviewer is not
+independent human validation. Resume the same driver through VRAMorama once
+the previous driver has exited. The OS lock prevents duplicate drivers.
+Final outputs: `results/e08/contextual.json`, `weighted.json`, a figure and
+`docs/e08_results.md`; review them before committing/reporting completion.
+Preserve the four-hour model follow-up interval and all existing science
+criteria. Never push or rent; leave unrelated files untouched.
 
 ## Research state
 
