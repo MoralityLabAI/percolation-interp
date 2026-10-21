@@ -80,27 +80,26 @@ Outputs go to `out/e05b_seed0/` and `out/e05b_seed1/`, with `gate.json`,
 `analysis.json` and `causal.json`. Expect each seed's verdict about 2-2.5 h after
 the fetch.
 
-### 4. e06 held-out run: a subagent working in a worktree
+### 4. e06 held-out run: e03 done, e05b pending
 
-- **Worktree:** `.claude/worktrees/agent-aa23bb7da98c92697`, branch
-  `worktree-agent-aa23bb7da98c92697`.
-- **Committed:** `e7bd7e7`, the held-out runner (`experiments/e06_heldout.py`),
-  `e06_score.py`, and the exact sequential swaps in `diagnostics.py`.
-- **Uncommitted at 16:00:** `results/e06/heldout_e03_seed1.json`,
-  `docs/e06_heldout_run.md`. The e03 seed 2 run was probably still going.
-- **To finish:**
-  1. Let it complete, or rerun seed 2 by hand with the documented command in
-     `docs/e06_heldout_run.md`.
-  2. Review the diff against master.
-  3. Run the tests: `PYTHONPATH=<worktree>/src .venv/Scripts/python.exe -m pytest -q tests`.
-  4. Merge the branch into master (`--no-ff`) and push.
-  5. Remove the worktree.
-- **e06 still needs the e05b graphs:** run the documented e05b command on
-  `out/e05b_seed0` and `out/e05b_seed1` once their `dataset_attributions.pt` and
-  `stats.pt` exist.
-  - They count whatever their gate result; report the gate status.
-  - Score P1-P5. P3 counts only for e05b; for e03 seeds 1-2 it is reported only.
-  - Write `docs/e06_results.md`.
+- **Merged into master:** the held-out runner `experiments/e06_heldout.py`, the
+  scorer `experiments/e06_score.py`, exact sequential swaps in `diagnostics.py`, and
+  62 passing tests. Details: `docs/e06_heldout_run.md`.
+- **Confirmatory e03 seeds 1 and 2 (VPD): P1, P2, P4 and P5 pass on both.**
+  - P2: z 20.4 and 21.3, p 0.001.
+  - P4: the c_s cell is testable with no wiring excess (p 0.079 and 0.073); the
+    c = 1 cell is not testable.
+  - P5: ρ 0.64, falling to about 0 once firing rate is partialled out.
+  - P3, reported only for these graphs: coverage, on the sink side.
+  - Results: `results/e06/heldout_e03_seed{1,2}.json`.
+- **Remaining:** once `out/e05b_seed{0,1}/` have `dataset_attributions.pt`,
+  `stats.pt` and `gate.json`, run from the main checkout:
+
+      PYTHONPATH=src .venv/Scripts/python.exe -u experiments/e06_heldout.py --e05b-dir out/e05b_seed0 out/e05b_seed1
+      .venv/Scripts/python.exe experiments/e06_score.py results/e06/heldout_*.json
+
+  Then write `docs/e06_results.md`. A prediction holds only if it passes on every
+  held-out graph it applies to; P3 counts on the e05b graphs only.
 
 ## Research state
 
@@ -112,7 +111,7 @@ the fetch.
 | e04 | Transfer to Qwen3-0.6B, layers 2-3 | done, two seeds: **not transfer**, Q1 fails. Addendum: about 94% of the zero-ablation gap is the position-0 massive activation, and the causal effect is one attention-sink pair |
 | e05 | Same question, position-aware mean-ablation baselines, layers 0-1 | local seed 0 failed the gate at 20k (KL 2.84 vs 1.94, plateau); seed 1 cancelled |
 | e05b | e05 with an 8× batch (32 × 128) on a rented A6000 | **training**; see above |
-| e06 | Null models for the sieve's z-curve: coverage vs alignment | pre-registered (`docs/e06_design.md`); held-out run in progress |
+| e06 | Null models for the sieve's z-curve: coverage vs alignment | pre-registered; e03 seeds 1-2 confirmatory: P1, P2, P4, P5 pass. Waiting on e05b graphs |
 
 **Discovery findings behind e06** (`docs/e06_exploratory.md`): the small-c excess is
 node-level alignment (Cov term) and the large-c deficit is coverage. The
