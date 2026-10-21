@@ -17,6 +17,8 @@ three questions:
 - `docs/e04_results.md`: e04 results, two seeds (Q1 fails in both; the zero-ablation baseline is ~94% the position-0 massive activation)
 - `docs/e05_design.md`: e05 design, the sieve on Qwen3-0.6B with position-aware mean-ablation baselines
 - `docs/e05b_design.md`: e05b design, e05 with a 16x larger decomposition batch on a rented GPU
+- `docs/e06_exploratory.md`: e06 discovery analysis (coverage/alignment decomposition, nulls) on e03/e04 graphs
+- `docs/e06_design.md`: e06 design, pre-registered null-model study of the sieve z-curve
 
 ## Install
 

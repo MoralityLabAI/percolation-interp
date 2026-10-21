@@ -1,13 +1,12 @@
-# e06 (DRAFT): null models for the sieve's z-curve
+# e06: null models for the sieve's z-curve
 
-> **DRAFT, written 2026-10-21. It is not pre-registered.** It needs the user's
-> decisions on the open choices at the end. It becomes binding only when it is
-> committed as final, before any held-out graph has been analysed with the e06
-> diagnostics.
+> **Pre-registered.** Drafted and finalised on 2026-10-21 with the user's decisions
+> (see "Decisions"). It was committed before any held-out graph had been analysed with
+> any e06 diagnostic, and before e05b's decompositions existed.
 >
 > It was written after the exploratory analysis in `e06_exploratory.md`, which used
-> e03 seed 0 and e04 seeds 0-1 as discovery data. Those graphs cannot serve as
-> confirmatory data for anything below.
+> e03 seed 0 and e04 seeds 0-1 as discovery data. Those graphs are not confirmatory
+> data for anything below.
 
 ## Why e06
 
@@ -80,18 +79,19 @@ null draw's own peak z measured against the remaining draws. That corrects for t
 
 ## Data
 
-**Held-out graphs (choose; see the open choices):**
-- **e05b seeds 0 and 1:** Qwen3-0.6B layers 0-1, VPD at batch 32. These are fresh
-  only if this design is committed as final before either graph is analysed with
-  any e06 diagnostic.
-  - e05b's own pipeline will compute the within-layer and in-strength sieve curves
-    (e05's Q1). Those are e05 quantities, and they will probably be seen first. The
-    predictions below avoid depending on them, except P3, which uses the
-    within-layer null at c_L.
-- **Optionally, e03 seeds 1 and 2** (toy model). Their graphs exist. Their
-  within-layer and in-strength sieve curves were seen in `e03_replication.md`, but
-  no e06 diagnostic has been run on them. That makes them partly seen: they can
-  confirm P1, P2, P4 and P5, but not P3.
+**Held-out graphs:**
+- **e05b seeds 0 and 1:** Qwen3-0.6B layers 0-1, VPD at batch 32. Fresh: this design
+  was committed before either graph existed.
+  - They count whether or not their decomposition passes e05's quality gate, and the
+    gate status is reported with each result. e06 is about graphs against their
+    nulls, not about transfer.
+  - e05b's own pipeline computes the within-layer and in-strength sieve curves (e05's
+    Q1). These will probably be seen before e06 runs. P3 uses the within-layer null
+    at c_L, so this is disclosed; P1, P2, P4 and P5 do not depend on those curves.
+- **e03 seeds 1 and 2** (toy model). Their within-layer and in-strength sieve curves
+  were seen in `e03_replication.md`; no e06 diagnostic has been run on them.
+  - They are confirmatory for P1, P2, P4 and P5.
+  - For P3 they are reported only, since their large-c curve was seen.
 
 Cost: CPU only. A Qwen-slice graph (≈ 10^5 edges) takes seconds per 100 draws; e03
 VPD (3.6M edges) about 2 minutes per 100. With 1,000 draws per null, the whole study
@@ -100,7 +100,7 @@ is a few CPU hours, mostly on the e03 VPD graphs.
 ## Predictions
 
 Each prediction is scored separately per held-out graph. A prediction **holds** if
-it passes on every held-out graph. The discovery values (from `e06_exploratory.md`
+it passes on every held-out graph it applies to (P3: the e05b graphs only). The discovery values (from `e06_exploratory.md`
 and the fixed-c rerun) are given for reference only.
 
 **P1: the small-c excess is alignment.**
@@ -164,36 +164,25 @@ and the fixed-c rerun) are given for reference only.
 - **P5 fails** (alignment survives rate control): alignment is more than
   frequency. N-AB then becomes the stricter control for future work.
 
-## Open choices for the user
+## Decisions (user, 2026-10-21)
 
-1. **Primary null.** The brief named the joint-degree null as primary. On e04-like
-   topologies it is degenerate, and e05b's slice is e04-like. This draft makes it
-   primary for the wiring question (P4, with a "not testable" outcome), and makes
-   in/out decoupling primary for the alignment question (P2). The alternative is
-   N-JD only, accepting that it will probably return "not testable" on e05b.
-2. **c selection.**
-   - (a) Fixed c_s = 0.1 and c_L = 4, as drafted.
-   - (b) Each held-out graph's own within-layer c*, determined by the sieve's rule.
-   - (c) Max-statistic over the grid everywhere.
-3. **Held-out data.**
-   - e05b only: then this design must be committed before e05b's graphs exist, and
-     e05b's local analysis starts unattended when the decompositions arrive tonight.
-   - e05b plus e03 seeds 1-2.
-   - Or decide that seeing e05b's within-layer sieve curve first is acceptable (it
-     touches P3).
-4. **Gate dependence.** Should e05b graphs count for e06 even if their decomposition
-   fails e05's quality gate? e06 is about the graphs' null structure, not about
-   transfer.
-5. **Thresholds and draws.** 1,000 draws and p ≤ 0.01 as drafted (0.005 per cell
-   for P4), or stricter.
-6. **Scope.** Keep P5 (frequency) tested, or report it only. Promote N-AB to a test.
-7. **Swap sampler.** The parallel double-edge swap is well mixed in practice, but it
-   is not an exact uniform sampler. Accept it, or require sequential Maslov-Sneppen
-   swaps with a mixing check (slower on VPD-size graphs).
+1. **Primary nulls as drafted.** N-DC is primary for alignment (P2). N-JD is primary for
+   wiring (P4), with a "not testable" outcome.
+2. **Fixed c:** c_s = 0.1 and c_L = 4. The grid-wide max-statistic is secondary and
+   reported.
+3. **Held-out data:** e05b seeds 0 and 1, plus e03 seeds 1 and 2 (see Data).
+4. **Gate:** e05b graphs count whatever their gate result; the gate status is reported.
+5. **Draws and thresholds:** 1,000 draws per null; p ≤ 0.01 (0.005 per cell for P4).
+6. **Scope:** P5 is tested; N-AB is reported only.
+7. **Swap sampler:**
+   - Qwen-size graphs: exact sequential double-edge swaps (Maslov-Sneppen).
+   - e03 VPD graphs: the parallel swap sampler, with a mixing check reported. The
+     check compares the backbone-fraction distribution against exact sequential
+     swaps on a subsample of draws.
 
-## Order of work (once approved)
+## Order of work
 
-1. Commit the final version of this design.
+1. Commit the final version of this design (done with this commit).
 2. When the held-out graphs exist, run `experiments/e06_explore.py` with 1,000
    draws on them only. A held-out mode with the fixed c values still has to be added.
 3. Score P1-P5 and write `e06_results.md`.
