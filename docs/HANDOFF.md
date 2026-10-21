@@ -129,6 +129,17 @@ archive-reader compatibility. Raw measurements: `results/e07/geometry.json`;
 figures: `results/e07/overview.png` and `curves.png`. No e07 compute is left
 queued. The e05b/e06 pipeline is separate and remains in progress.
 
+## e08: contextual follow-up (draft only)
+
+The human proposed testing whether e07's high-contact coordinates share
+causal responsibility for unrelated contextual families. The proposed
+protocol is `docs/e08_design.md`: fixed neurons 196 (layer-0 gate), 33
+(layer-1 gate), and 1037 (layer-1 up), with held-out signed interventions
+and an explicitly defined all-energy percolation companion. No e08 compute
+or implementation has started. Labeling, feature scores, hook validation
+and resource budgets remain to be frozen before execution. Finish e05b/e06
+first; do not change their scientific criteria or compete for their GPU.
+
 ## Research state
 
 | Exp | Question | Status |
