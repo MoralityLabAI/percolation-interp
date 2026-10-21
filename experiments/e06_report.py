@@ -27,7 +27,8 @@ GRAPHS = [("e03_vpd", "e03 VPD (toy, seed 0)"), ("e03_sae", "e03 SAE tower (seed
           ("e04_s0", "e04 Qwen L2-3, seed 0"), ("e04_s1", "e04 Qwen L2-3, seed 1")]
 NULLS = [("within_layer", "within-layer", plotstyle.INK), ("out_strength", "out-strength", plotstyle.SERIES[0]),
          ("in_strength", "in-strength", plotstyle.SERIES[1]), ("layer_pair", "layer-pair", plotstyle.SERIES[2]),
-         ("activity_binned", "activity-binned", plotstyle.MUTED)]
+         ("activity_binned", "activity-binned", plotstyle.MUTED),
+         ("in_out_decoupled", "in/out decoupled", plotstyle.INK_2)]
 
 
 def load():
@@ -41,7 +42,7 @@ def load():
 
 def fig_decomposition(data, path, null="within_layer"):
     names = [(n, t) for n, t in GRAPHS if n in data]
-    fig, axes = plt.subplots(2, len(names), figsize=(3.0 * len(names), 5.4), sharex="col", squeeze=False)
+    fig, axes = plt.subplots(2, len(names), figsize=(3.0 * len(names), 5.4), squeeze=False)
     for j, (name, title) in enumerate(names):
         r = data[name]["nulls"][null]
         cs = np.array(r["cs"])
@@ -56,16 +57,17 @@ def fig_decomposition(data, path, null="within_layer"):
             ax.axhline(0, color=plotstyle.BASELINE, lw=0.8)
             ax.axvline(r["c_star"], color=plotstyle.MUTED, lw=0.8, ls="--")
             ax.set_xscale("log")
-        small = cs <= max(1.0, 3 * r["c_star"])
+        cmax = max(0.1, 3 * r["c_star"])
+        small = cs <= cmax
         lo = min(tot[small].min(), cov[small].min(), al[small].min())
         hi = max(tot[small].max(), cov[small].max(), al[small].max())
         pad = 0.15 * (hi - lo + 1e-4)
         axes[1, j].set_ylim(lo - pad, hi + pad)
-        axes[1, j].set_xlim(cs.min(), max(1.0, 3 * r["c_star"]))
+        axes[1, j].set_xlim(cs.min(), cmax)
         axes[0, j].set_title(title, fontsize=9)
         axes[1, j].set_xlabel("kept out-degree per live source, c")
     axes[0, 0].set_ylabel("real − mean shuffle\n(interior backbone fraction)")
-    axes[1, 0].set_ylabel("same, small c (zoom)")
+    axes[1, 0].set_ylabel("same, zoomed to c ≤ max(0.1, 3c*)")
     axes[0, 0].legend(loc="lower left", fontsize=7)
     fig.suptitle("Where the sieve's excess and deficit come from (within-layer shuffles; dashed: c*). Exploratory.",
                  x=0.01, ha="left", fontsize=10, color=plotstyle.INK)
@@ -83,7 +85,8 @@ def fig_nulls(data, path):
             r = data[name]["nulls"].get(key)
             if r is None:
                 continue
-            ax.plot(r["cs"], r["z_curve"], color=color, lw=1.2, label=label)
+            ax.plot(r["cs"], r["z_curve"], color=color, lw=1.2, label=label,
+                    ls="--" if key == "in_out_decoupled" else "-")
         ax.axhline(0, color=plotstyle.BASELINE, lw=0.8)
         ax.axhline(3, color=plotstyle.MUTED, lw=0.6, ls=":")
         ax.set_xscale("log")
@@ -92,11 +95,36 @@ def fig_nulls(data, path):
         ax.set_xlabel("c")
     axes[0, 0].set_ylabel("z of backbone fraction vs null")
     axes[0, 0].legend(loc="lower left", fontsize=7)
-    fig.suptitle("Learned connectivity z under five weight nulls (100 shuffles each). Exploratory.",
+    fig.suptitle("Learned connectivity z under six nulls (100 draws each; dotted line: z = 3). Exploratory.",
                  x=0.01, ha="left", fontsize=10, color=plotstyle.INK)
     fig.tight_layout()
     fig.savefig(path)
     plt.close(fig)
+
+
+def rate_partial(name):
+    """Pooled within-layer Spearman rho(in, out) and the same with firing-rate rank partialled out."""
+    from scipy.stats import rankdata
+
+    from percinterp import LayeredDAG
+    from percinterp.diagnostics import node_strength
+
+    z = np.load(OUT / "graphs" / f"{name}.npz")
+    g = LayeredDAG(list(z["sizes"]), z["src"], z["dst"], z["w"], sources=z["sources"], sinks=z["sinks"])
+    s_in, s_out = node_strength(g)
+    ok = ~(g.sources | g.sinks) & (s_in > 0) & (s_out > 0)
+    xs, ys, rs = [], [], []
+    for l in range(g.n_layers):
+        m = ok & (g.node_layer == l)
+        if m.sum() < 3:
+            continue
+        for arr, out in ((s_in, xs), (s_out, ys), (z["rate"], rs)):
+            r = rankdata(arr[m])
+            out.append((r - r.mean()) / max(r.std(), 1e-12))
+    x, y, r = map(np.concatenate, (xs, ys, rs))
+    resid = lambda v: v - r * (v @ r) / (r @ r)  # noqa: E731
+    return {"rho": float(np.corrcoef(x, y)[0, 1]), "rho_given_rate": float(np.corrcoef(resid(x), resid(y))[0, 1]),
+            "rho_in_rate": float(np.corrcoef(x, r)[0, 1]), "rho_out_rate": float(np.corrcoef(y, r)[0, 1])}
 
 
 def compact(rec):
@@ -114,6 +142,9 @@ def main():
     fig_decomposition(data, FIG / "decomposition.png")
     fig_nulls(data, FIG / "nulls.png")
     for name, rec in data.items():
+        if (OUT / "graphs" / f"{name}.npz").exists():
+            rec.setdefault("strength", {})["rate_partial"] = rate_partial(name)
+            print(name, "strength vs firing rate:", rec["strength"]["rate_partial"])
         (RES / f"explore_{name}.json").write_text(json.dumps(compact(rec)))
     if (OUT / "explore_init.json").exists():
         (RES / "explore_init.json").write_text((OUT / "explore_init.json").read_text())
