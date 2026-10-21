@@ -22,6 +22,8 @@ Exploratory tools (e06). None of them changes `sieve()`; they reuse its ranking
    within (source layer, destination layer) blocks, keeping every node's kept in- and
    out-degree per block. Optionally only onto edges of the original skeleton.
 6. Group labels for weight-level nulls: layer pairs, and node-score bins.
+7. Exact sequential double-edge swaps (Maslov-Sneppen), one swap at a time, for the e06
+   held-out joint-degree null; the parallel rounds of (5) are its fast approximation.
 """
 
 from __future__ import annotations
@@ -468,3 +470,154 @@ def binned_groups(g: LayeredDAG, base: np.ndarray, src_score: np.ndarray | None 
     if dst_score is not None:
         lab = lab + node_bins(dst_score)[g.dst]
     return lab
+
+
+# --- 7. exact sequential swaps (e06) ----------------------------------------------------------
+
+
+def sequential_edge_swaps(g: LayeredDAG, src: np.ndarray, dst: np.ndarray, rng: np.random.Generator,
+                          n_swaps: int | None = None, n_rounds: int = 30, allowed=None,
+                          blocks: str = "pair") -> tuple[np.ndarray, np.ndarray, float]:
+    """Rewire a simple directed edge set by exact sequential (Maslov-Sneppen) double-edge swaps.
+
+    Same constraints as double_edge_swaps (degrees per block, no multi-edges, forward edges,
+    optionally only onto `allowed` keys src * n_nodes + dst), but one swap at a time: each
+    accepted swap is applied before the next is proposed, so there are no conflicts to drop.
+
+    Each step picks a block with probability proportional to n_b (n_b - 1) and two distinct edges
+    of it uniformly, i.e. an unordered pair uniformly among all same-block pairs. Blocks are
+    invariant under swaps, so the proposal is symmetric; a rejected proposal leaves the edge set
+    unchanged. The chain's stationary distribution is therefore uniform over the edge sets
+    reachable by swaps. n_swaps defaults to n_rounds * (E // 2), the number of proposals that
+    double_edge_swaps makes in n_rounds rounds. `allowed` may be an array of keys or a prebuilt
+    set (pass a set to reuse it across calls). Returns (src, dst, acceptance rate)."""
+    src = np.array(src, dtype=np.int64)
+    dst = np.array(dst, dtype=np.int64)
+    E = len(src)
+    N = g.n_nodes
+    if n_swaps is None:
+        n_swaps = n_rounds * (E // 2)
+    if E < 2 or n_swaps <= 0:
+        return src, dst, 0.0
+    block = swap_blocks(g, src, dst, blocks)
+    order = np.argsort(block, kind="stable")
+    bl = block[order]
+    starts = np.flatnonzero(np.r_[True, bl[1:] != bl[:-1]])
+    sizes = np.diff(np.r_[starts, E]).astype(np.int64)
+    pair_count = (sizes * (sizes - 1)).astype(float)
+    if pair_count.sum() == 0:
+        return src, dst, 0.0
+    if allowed is not None and not isinstance(allowed, (set, frozenset)):
+        allowed = set(np.asarray(allowed, dtype=np.int64).tolist())
+    b = rng.choice(len(sizes), size=n_swaps, p=pair_count / pair_count.sum())
+    n_b = sizes[b]
+    i = np.minimum((rng.random(n_swaps) * n_b).astype(np.int64), n_b - 1)
+    j = np.minimum((rng.random(n_swaps) * (n_b - 1)).astype(np.int64), n_b - 2)
+    j += j >= i  # distinct from i, uniform over the block's other n_b - 1 edges
+    i = order[starts[b] + i].tolist()
+    j = order[starts[b] + j].tolist()
+    layer = g.node_layer.tolist()
+    s, d = src.tolist(), dst.tolist()
+    present = set((src * N + dst).tolist())
+    accepted = 0
+    for e1, e2 in zip(i, j):
+        u, v, x, y = s[e1], d[e1], s[e2], d[e2]  # u->v, x->y  ==>  u->y, x->v
+        if u == x or v == y or layer[u] >= layer[y] or layer[x] >= layer[v]:
+            continue
+        k1, k2 = u * N + y, x * N + v
+        if k1 in present or k2 in present:
+            continue
+        if allowed is not None and (k1 not in allowed or k2 not in allowed):
+            continue
+        present.discard(u * N + v)
+        present.discard(x * N + y)
+        present.add(k1)
+        present.add(k2)
+        d[e1], d[e2] = y, v
+        accepted += 1
+    return np.array(s, dtype=np.int64), np.array(d, dtype=np.int64), accepted / n_swaps
+
+
+def decompose_fast(g: LayeredDAG, weight: np.ndarray, groups: np.ndarray | None = None,
+                   cs: np.ndarray | None = None, n_shuffles: int = 100, rng: np.random.Generator | None = None,
+                   nodes: np.ndarray | None = None, null_groups: np.ndarray | None = None) -> DecompositionNull:
+    """decompose(..., null="shuffle") with the per-graph work done once: the same rng draws and
+    bit-identical results, several times faster on graphs with millions of edges.
+
+    A within-group weight shuffle keeps the live edge set and every group, so the shuffle blocks,
+    the ranking groups' members and degree_entry's per-group scale (edges per distinct source)
+    are fixed; only the ranks change. Each draw repeats permute_within's block loop and
+    rank_entry's per-group ranking on cached index arrays."""
+    rng = rng or np.random.default_rng(0)
+    groups = g.edge_layer("dst") if groups is None else np.asarray(groups)
+    weight = np.asarray(weight, dtype=float)
+    E = degree_entry(g, weight, groups)
+    cs = default_grid(E) if cs is None else np.asarray(cs, dtype=float)
+    p = profile(g, E)
+    real = decompose_entries(g, p.F, p.B, cs, nodes)
+    live = weight > 0
+    null_groups = groups if null_groups is None else np.asarray(null_groups)
+    w_live = weight[live]
+    ng = null_groups[live]
+    order = np.argsort(ng, kind="stable")  # as permute_within
+    blocks = np.split(order, np.flatnonzero(np.diff(ng[order])) + 1)
+    gl, sl = groups[live], g.src[live]
+    rank_groups = []  # (member indices into the live edges, len, scale) as degree_entry / rank_entry
+    for gid in np.unique(gl):
+        idx = np.flatnonzero(gl == gid)
+        rank_groups.append((idx, len(idx), len(idx) / len(np.unique(sl[idx]))))
+    live_idx = np.flatnonzero(live)
+    out = []
+    for _ in range(n_shuffles):
+        w = w_live.copy()
+        for block in blocks:
+            w[block] = w[rng.permutation(block)]
+        q = np.empty(len(w))
+        for idx, n, scale in rank_groups:
+            x = w[idx]
+            # rank_entry's n_ge = n - searchsorted(sort(x), x, "left"), via one argsort: the
+            # number of elements below x is the start of x's run of ties in sorted order
+            o = np.argsort(x, kind="stable")
+            xs = x[o]
+            start = np.r_[True, xs[1:] != xs[:-1]]
+            below = np.maximum.accumulate(np.where(start, np.arange(n), 0))
+            n_ge = np.empty(n, dtype=np.int64)
+            n_ge[o] = n - below
+            q[idx] = (n_ge / n) * scale
+        entry = np.full(len(weight), np.inf)
+        entry[live_idx] = q
+        ps = profile(g, entry)
+        out.append(decompose_entries(g, ps.F, ps.B, cs, nodes))
+    return DecompositionNull(real, out)
+
+
+def skeleton_keys(g: LayeredDAG, entry: np.ndarray) -> set:
+    """Edge keys src * n_nodes + dst of the graph's edges (finite entry), as a set for
+    sequential_edge_swaps / joint_degree_null_sequential."""
+    fin = np.isfinite(entry)
+    return set((g.src[fin] * g.n_nodes + g.dst[fin]).tolist())
+
+
+def joint_degree_null_sequential(g: LayeredDAG, entry: np.ndarray, c: float, n_null: int = 100,
+                                 rng: np.random.Generator | None = None, n_rounds: int = 30,
+                                 skeleton: bool = True, nodes: np.ndarray | None = None, blocks: str = "pair",
+                                 allowed=None) -> JointDegreeNull:
+    """joint_degree_null with the exact sequential sampler (sequential_edge_swaps).
+
+    Every draw starts from the real kept graph and makes n_rounds * (E // 2) proposals, as many
+    as joint_degree_null's parallel rounds. skeleton=True restricts swaps to edges of the
+    original graph; `allowed` may pass that key set prebuilt (skeleton_keys)."""
+    rng = rng or np.random.default_rng(0)
+    keep = entry <= c
+    s, d = g.src[keep], g.dst[keep]
+    real = binary_backbone_fraction(g, s, d, nodes)
+    if not skeleton:
+        allowed = None
+    elif allowed is None:
+        allowed = skeleton_keys(g, entry)
+    vals, acc = [], []
+    for _ in range(n_null):
+        s2, d2, a = sequential_edge_swaps(g, s, d, rng, n_rounds=n_rounds, allowed=allowed, blocks=blocks)
+        vals.append(binary_backbone_fraction(g, s2, d2, nodes))
+        acc.append(a)
+    return JointDegreeNull(float(c), real, np.array(vals), int(keep.sum()), float(np.mean(acc)) if acc else 0.0)
