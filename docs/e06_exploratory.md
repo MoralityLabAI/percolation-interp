@@ -252,6 +252,18 @@ out-strength, ranked within its layer and then pooled.
    topologies. e05b's layer 0-1 slice has the same topology as e04, so the null
    would very likely be degenerate there too. See `e06_design.md`.
 
+## At the fixed c values of the e06 draft
+
+`experiments/e06_fixed_c.py` (100 draws, seed 5). Excess Δb = coverage + alignment,
+with z against the same null.
+
+| Graph | Within-layer, c = 0.1 | Within-layer, c = 1 | Within-layer, c = 4 | Decoupling z at c = 0.1 / 1 / 4 |
+|---|---|---|---|---|
+| e03 VPD | +0.056 = +0.020 + 0.036 (z 18.9) | −0.226 = −0.226 + 0.000 (z −26.5) | −0.285 = −0.285 + 0.000 (z −95.4) | 19.5 / 0.0 / 0.0 |
+| e03 SAE | +0.006 = −0.007 + 0.013 (z 2.2) | −0.271 = −0.359 + 0.088 (z −23.5) | −0.623 = −0.727 + 0.105 (z −109.5) | 9.6 / 17.6 / 13.2 |
+| e04 seed 0 | +0.008 = −0.002 + 0.010 (z 2.5) | −0.339 = −0.340 + 0.001 (z −17.5) | −0.524 = −0.524 + 0.000 (z −125.9) | 4.1 / 0.2 / 0.0 |
+| e04 seed 1 | +0.002 = −0.003 + 0.005 (z 0.6) | −0.350 = −0.350 + 0.000 (z −21.5) | −0.551 = −0.551 + 0.000 (z −167.1) | 3.2 / 0.3 / 0.0 |
+
 ## Caveats
 
 - These are discovery data, and many quantities were looked at. Treat every number
