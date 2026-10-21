@@ -1,4 +1,4 @@
-# Handoff, 2026-10-22 01:48 Singapore
+# Handoff, 2026-10-22 05:04 Singapore
 
 Snapshot of everything in flight for the next session, human or agent. The repo
 is `MoralityLabAI/percolation-interp` (GitHub, branch `master`); the local checkout
@@ -29,12 +29,14 @@ after seeing results; log deviations in the design doc.
 
 ### 2. Local follow-through and resource state
 
-- The original e05b driver is running under VRAMorama; seed 0's gate and stats
-  completed. Its 13 GiB attribution lease is waiting for memory.
-- At the follow-up check an unrelated idle `nlsteer-text` process (PID 30092) still held
-  about 3.8 GiB, leaving about 11.5 GiB available. A question asking the human
-  whether to stop it is pending. Do not infer permission to stop it, change
-  attribution batch/sample counts, or bypass VRAMorama admission.
+- The original e05b driver is running under VRAMorama; seed 0 passed its gate
+  and completed stats. Its 13 GiB attribution lease c7a051ce was admitted at
+  approximately 05:04 Singapore after the GPU blocker was removed.
+- The human explicitly authorized stopping the idle nl-steering process.
+  PID 30092 was re-verified as the expected text_effects.py job (0% GPU
+  utilization, 3.8 GiB held) and stopped at 05:03. GPU memory was released;
+  no unrelated process was stopped. Attribution batch/sample counts and
+  VRAMorama admission rules were not changed.
 - A small follow-through supervisor is already running (owner
   `e05b-followthrough`); log `out/e05b/followthrough.log`. Its temporary script
   and manifest live in the Codex chat workspace's `work/` directory. It verified
@@ -55,11 +57,11 @@ after seeing results; log deviations in the design doc.
   task files and leaving unrelated changes untouched.
 
 
-### 3. e05b local analysis (started; seed 0 attributions queued)
+### 3. e05b local analysis (seed 0 attributions admitted)
 
 Seed 0 passed the gate: CI-masked KL 1.763079 versus limit 1.943471
 (KL_PAMA 7.773885); stats.pt is present. Seed 1 gate is still pending.
-The queued attribution stage has not run. For e06, both graphs count even if
+The attribution stage was admitted after the GPU became available. For e06, both graphs count even if
 a gate fails: harvest their stats/attributions without scoring failed seeds
 on e05 Q1-Q4. Never retrain e05b.
 
@@ -71,8 +73,7 @@ Per seed, under vramorama leases with watchdogs (the e05 driver):
 5. Causal: `e05_causal.py`, component-level mean ablation, Q2-Q4.
 
 Outputs go to `out/e05b_seed0/` and `out/e05b_seed1/`, with `gate.json`,
-`analysis.json` and `causal.json`. Expect each seed's verdict about 2-2.5 h after
-the fetch.
+`analysis.json` and `causal.json`. Expect about 2-2.5 h per seed after GPU admission, subject to CPU analysis time.
 
 ### 4. e06 held-out run: e03 done, e05b pending
 
@@ -116,7 +117,7 @@ Existing suite: 62 tests pass.
 | e03 | Toy model, VPD + SAE sieve | done, three seeds: VPD sieve + causal pass, SAE fails |
 | e04 | Transfer to Qwen3-0.6B, layers 2-3 | done, two seeds: **not transfer**, Q1 fails. Addendum: about 94% of the zero-ablation gap is the position-0 massive activation, and the causal effect is one attention-sink pair |
 | e05 | Same question, position-aware mean-ablation baselines, layers 0-1 | local seed 0 failed the gate at 20k (KL 2.84 vs 1.94, plateau); seed 1 cancelled |
-| e05b | e05 with an 8× batch (32 × 128) on a rented A6000 | both trained and copied; pod deleted; seed 0 gate passes, analysis queued |
+| e05b | e05 with an 8× batch (32 × 128) on a rented A6000 | both trained and copied; pod deleted; seed 0 gate passes, attribution job admitted |
 | e06 | Null models for the sieve's z-curve: coverage vs alignment | pre-registered; e03 seeds 1-2 confirmatory: P1, P2, P4, P5 pass. Waiting on e05b graphs |
 
 **Discovery findings behind e06** (`docs/e06_exploratory.md`): the small-c excess is
