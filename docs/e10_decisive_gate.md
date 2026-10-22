@@ -96,3 +96,47 @@ The registered E06 joint-degree outputs let us quantify the graph-only differenc
 A path-backbone interior vertex necessarily has a retained in-edge and retained out-edge; the degree test therefore has perfect sensitivity for these graph definitions. The 7 and 3 extras are degree-eligible nodes without a valid source-to-sink path. E06 found no statistically significant rewiring excess after degree-preserving null tests. These counts describe E06's **c=0.1** analysis, whereas E10's pre-scored causal sieve uses each original E03 `c_star`. The manifests must recompute true overlap at those frozen values.
 
 The preflight is a structural result, not a new causal result or evidence that the few path-only distinctions have any particular behavioral value. The optional `tests/test_e10_runner_mock.py` exercises the causal driver on mocked PyTorch CPU inputs, explicitly marked as synthetic.
+
+## E10b single-command local gate (2026-10-22)
+
+The implementation now includes `experiments/e10_run_local.py`. It is designed to
+work with the **already saved** E03 VPD checkpoints on the user's Windows PC.
+It is deliberately absent from GitHub's cloud causal runner because the original
+model/data artifacts remain local.
+
+```powershell
+# Checks saved analysis, VPD attribution tensors, target and model checkpoint paths.
+python experiments/e10_run_local.py
+
+# CPU: freezes module-budget-matched selector manifests once, without overwriting.
+python experiments/e10_run_local.py --prepare
+
+# Requires the saved model, target, dataset and VPD environment.
+# Uses vramorama automatically for CUDA when installed.
+python experiments/e10_run_local.py --execute --device cuda
+```
+
+If the analytical/causal Python environments differ, specify
+`--analysis-python PATH --causal-python PATH`. The known VPD input directories
+default to `out/e03_seed1` and `out/e03_seed2`, each with its own output under
+`out/e10_decisive/`. CUDA without a vramorama lease is refused unless
+`--allow-direct-cuda` is explicitly supplied. CPU evaluation is available
+with `--execute --device cpu` if model dependencies fit.
+
+**Exact early stopping:** After CPU preparation, the runner verifies frozen
+analysis and cross-reference hashes before comparing component memberships.
+If any cheap deterministic comparator selects *exactly the same components*
+per module as the sieve, the within-target two-seed E10 incremental-advantage
+criterion is mathematically impossible. Exit code 3 stops before spending GPU
+compute; unchanged source artifacts and frozen manifests remain intact.
+
+**Statistical interpretation:** The fixed practical rule is unchanged:
+point improvement >= 2% of the ablation gap, paired bootstrap lower bound > 0.
+The scorer now adds a `decision_class` that distinguishes exact selector
+identity, bootstrap evidence excluding the 2% advantage, a quality failure,
+and **inconclusive** power (a gate failure whose data still permit an advantage).
+Equality of measured KL arrays alone is insufficient evidence of identical
+selected component masks: the runner certifies identity from the manifest.
+
+The new runner and mock/tests exercise these branches on CPU. They are
+engineering verification; they are not a new real-model causal result.

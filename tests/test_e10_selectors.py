@@ -135,3 +135,31 @@ def test_historical_degree_preflight_counts_without_retraining():
     y = module.audit_one(doc(1582, 106, 109, 691), "seed2")
     assert (x["c_s"]["local_false_positives"], y["c_s"]["local_false_positives"]) == (7, 3)
     assert x["c_1"]["local_false_positives"] == y["c_1"]["local_false_positives"] == 0
+
+
+def test_e10_gate_disambiguates_identical_selector_and_weak_power():
+    # Equality of two scored vectors is not, on its own, proof of equal masks.
+    d = sample_kl()
+    d["local_degree"] = d["sieve"][:]
+    equiv = score_sequential_kl(d, n_bootstrap=200,
+                                same_selection={"local_degree"})
+    assert equiv["decision_class"] == "EXACT_DEGREE_OR_OTHER_SELECTOR_EQUIVALENCE"
+    assert equiv["comparators"]["local_degree"]["certified_identical_selector"]
+    assert "local_degree" in equiv["certified_equivalent_selectors"]
+    with pytest.raises(ValueError, match="different KL"):
+        score_sequential_kl(sample_kl(), n_bootstrap=100,
+                            same_selection={"local_degree"})
+
+    # Positive mean exceeding the 2% practical threshold with wide uncertainty
+    # must remain inconclusive, rather than being claimed as a refutation.
+    wiggle = sample_kl()
+    wiggle["local_degree"] = [1.15 + (.7 if i % 2 else -.7) for i in range(16)]
+    uncertain = score_sequential_kl(wiggle, n_bootstrap=1000)
+    assert uncertain["status"] == "NO_INCREMENTAL_PERCO_ADVANTAGE"
+    assert uncertain["decision_class"] == "INCONCLUSIVE_GATE_NOT_MET"
+    assert uncertain["comparators"]["local_degree"]["extra_gap_ci_95"][0] < 0
+
+    dominated = sample_kl()
+    dominated["local_degree"] = [1.0] * 16
+    no_effect = score_sequential_kl(dominated, n_bootstrap=200)
+    assert no_effect["decision_class"] == "PRACTICAL_ADVANTAGE_EXCLUDED_BY_BOOTSTRAP"

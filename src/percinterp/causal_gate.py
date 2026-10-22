@@ -14,7 +14,8 @@ QUALITY_CI_TO_ZERO_RATIO = 0.25  # Explicit E10 toy-model engineering gate.
 
 
 def score_sequential_kl(values: Mapping[str, object], *,
-                        n_bootstrap: int = 2000, seed: int = 20261023) -> dict:
+                        n_bootstrap: int = 2000, seed: int = 20261023,
+                        same_selection: set[str] | None = None) -> dict:
     """Paired sequence-level bootstrap of comparator KL minus sieve KL.
 
     A positive delta is an improvement from using the sieve. All ablation
@@ -34,6 +35,12 @@ def score_sequential_kl(values: Mapping[str, object], *,
     n = next(iter(sizes))
     if any(v.ndim != 1 or not np.isfinite(v).all() for v in data.values()):
         raise ValueError("each KL vector must be finite and one-dimensional")
+    same_selection = set() if same_selection is None else set(same_selection)
+    if not same_selection.issubset(set(DETERMINISTIC) - {"sieve"}):
+        raise ValueError("same_selection must contain only nonsieve deterministic names")
+    for name in same_selection:
+        if not np.array_equal(data[name], data["sieve"]):
+            raise ValueError(f"same selected components produced different KL values: {name}")
     mean = {k: float(v.mean()) for k, v in data.items()}
     gap = mean["none"] - mean["all"]
     if gap <= 0:
@@ -66,9 +73,21 @@ def score_sequential_kl(values: Mapping[str, object], *,
             "passes_practical_gate": bool(extra >= MIN_EXTRA_GAP and low > 0),
             "per_sequence_win_rate": float((deltas > 0).mean()),
             "exact_same_kl_vectors": bool(np.array_equal(data[name], sieve)),
+            "certified_identical_selector": name in same_selection,
+            "ci_excludes_two_percent_advantage": bool(high < MIN_EXTRA_GAP),
         }
     all_pass = quality_pass and all(
         m["passes_practical_gate"] for m in comparisons.values())
+    if not quality_pass:
+        decision_class = "DECOMPOSITION_QUALITY_FAIL"
+    elif all_pass:
+        decision_class = "INCREMENTAL_ADVANTAGE_DETECTED"
+    elif same_selection:
+        decision_class = "EXACT_DEGREE_OR_OTHER_SELECTOR_EQUIVALENCE"
+    elif any(c["ci_excludes_two_percent_advantage"] for c in comparisons.values()):
+        decision_class = "PRACTICAL_ADVANTAGE_EXCLUDED_BY_BOOTSTRAP"
+    else:
+        decision_class = "INCONCLUSIVE_GATE_NOT_MET"
     random_keys = sorted(k for k in data if k.startswith("random_"))
     random_kl = np.array([mean[k] for k in random_keys], dtype=float)
     return {
@@ -78,6 +97,8 @@ def score_sequential_kl(values: Mapping[str, object], *,
         "ablation_gap": float(gap),
         "ci_over_zero_ratio": float(ratio),
         "quality_gate_pass": quality_pass,
+        "decision_class": decision_class,
+        "certified_equivalent_selectors": sorted(same_selection),
         "comparators": comparisons,
         "random_kl_median": float(np.median(random_kl)) if len(random_kl) else None,
         "random_kl_best": float(np.min(random_kl)) if len(random_kl) else None,
@@ -100,6 +121,7 @@ def combine_seed_results(records: list[dict]) -> dict:
     per_seed = [{"manifest_sha256": r["manifest_sha256"],
                  "status": r["score"]["status"],
                  "quality_gate_pass": r["score"].get("quality_gate_pass", False),
+                 "decision_class": r["score"].get("decision_class", "UNKNOWN"),
                  "comparison": r["score"].get("comparators", {})}
                 for r in records]
     all_pass = len(per_seed) >= 2 and all(
@@ -108,6 +130,12 @@ def combine_seed_results(records: list[dict]) -> dict:
         "status": "WITHIN_TARGET_SEED_GATE_PASS" if all_pass
                   else "WITHIN_TARGET_SEED_GATE_NOT_MET",
         "n_seed_results": len(per_seed),
+        "contains_exact_equivalence": any(
+            r["decision_class"] == "EXACT_DEGREE_OR_OTHER_SELECTOR_EQUIVALENCE"
+            for r in per_seed),
+        "interpretation": ("Within-target seed gate passed" if all_pass else
+            "At least one decomposition failed the pre-specified gate; consult "
+            "per-seed decision_class to distinguish falsification from inconclusive power"),
         "per_seed": per_seed,
         "limitation": "Multiple decomposition seeds of the same target model are not "
                       "independent model replications. Broader applicability still requires "

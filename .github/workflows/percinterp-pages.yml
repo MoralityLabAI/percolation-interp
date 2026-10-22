@@ -23,6 +23,8 @@ on:
       - 'experiments/e10_score.py'
       - 'tests/test_e10_selectors.py'
       - 'tests/test_e10_runner_mock.py'
+      - 'experiments/e10_run_local.py'
+      - 'tests/test_e10_run_local.py'
       - 'experiments/e10_preflight.py'
   workflow_dispatch:
 
@@ -47,9 +49,9 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e . pytest
       - name: Verify E08 E09 and E10 CPU gates
-        run: python -m pytest -q tests/test_holonomy_percolation.py tests/test_e08_site.py tests/test_e09_utility_audit.py tests/test_e10_selectors.py tests/test_e10_runner_mock.py
+        run: python -m pytest -q tests/test_holonomy_percolation.py tests/test_e08_site.py tests/test_e09_utility_audit.py tests/test_e10_selectors.py tests/test_e10_runner_mock.py tests/test_e10_run_local.py
       - name: Syntax-check optional E10 causal driver
-        run: python -m compileall -q experiments/e10_e03_causal.py experiments/e10_score.py
+        run: python -m compileall -q experiments/e10_e03_causal.py experiments/e10_score.py experiments/e10_run_local.py
       - name: Build static Pages payload
         run: python experiments/e08_build_site.py --output site
       - name: Audit historical percolation utility

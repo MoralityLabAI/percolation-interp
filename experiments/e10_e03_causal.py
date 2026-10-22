@@ -199,7 +199,11 @@ def evaluate(*, manifest: dict, e03_dir: Path, device: str,
             print(f"E10 scored {seen}/{n_sequences} sequence rows in {time.time()-start:.0f}s", flush=True)
     if len(evaluated_hashes) != n_sequences or set(evaluated_hashes) & excluded:
         raise AssertionError("held-out sequence exclusion or row count failed")
-    score = score_sequential_kl(values, n_bootstrap=bootstrap)
+    sieve_signature = _signature(selections["sieve"], modules)
+    certified_aliases = {name for name in DETERMINISTIC if name != "sieve"
+                         and _signature(selections[name], modules) == sieve_signature}
+    score = score_sequential_kl(values, n_bootstrap=bootstrap,
+                                same_selection=certified_aliases)
     return {
         "schema": "percinterp.e10.causal.v1",
         "source_type": manifest["source_type"],

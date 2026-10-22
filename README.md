@@ -147,3 +147,20 @@ python experiments/e10_e03_causal.py --e03-dir out/e03_seed1 --manifest out/e10_
 E10 historical preflight: [E06 degree-vs-path counts](https://moralitylabai.github.io/percolation-interp/e10_preflight.json). At c=0.1 degree-only contacts overselect the E03 seed-1/seed-2 path backbones by 7/3 nodes; at c=1 they agree exactly. These are graph statistics, not a causal E10 result.
 
 An optional PyTorch integration test with an explicitly mocked VPD model is available in `tests/test_e10_runner_mock.py`; it passes locally when PyTorch is present and skips in lightweight CI without PyTorch.
+
+## E10 local run
+
+The saved E03 VPD tensors are required for a real causal comparison. The
+[readiness and early-stop runner](experiments/e10_run_local.py) checks for them
+without touching the checkpoints:
+
+```bash
+python experiments/e10_run_local.py
+python experiments/e10_run_local.py --prepare
+python experiments/e10_run_local.py --execute --device cuda
+```
+
+The GPU step needs vramorama or explicit direct-CUDA authorization. If any
+simple comparator selects precisely the same component set as the sieve,
+the runner halts the two-seed gate before inference. Read
+[the E10 protocol and uncertainty rules](docs/e10_decisive_gate.md).
