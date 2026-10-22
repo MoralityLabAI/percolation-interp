@@ -27,6 +27,9 @@ def build_site(output: Path) -> dict:
     output.mkdir(parents=True, exist_ok=True)
     for name in ("index.html",):
         shutil.copy2(source / name, output / name)
+    library_page = output / "library" / "index.html"
+    library_page.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(ROOT / "ui" / "library" / "index.html", library_page)
 
     fixtures = {mode: make_fixture(mode) for mode in ("planted", "flat", "tangent")}
     for mode, data in fixtures.items():
@@ -43,6 +46,7 @@ def build_site(output: Path) -> dict:
     (output / ".nojekyll").write_text("", encoding="utf-8")
     return {
         "page": str(output / "index.html"),
+        "library_page": str(library_page),
         "fixtures": {mode: {"cycles": len(data["loops"]), "p_h": data["p_h"]}
                      for mode, data in fixtures.items()},
         "provenance": "synthetic only; E07 statistics displayed separately",

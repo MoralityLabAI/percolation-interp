@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PercInterp | Python library</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1018;--panel:#142230;--line:#34465a;--ink:#edf5fc;--muted:#b0c2d1;--aqua:#5cd8c7;--blue:#b4ccfc}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 system-ui,Segoe UI,sans-serif}
+main{max-width:1000px;margin:auto;padding:26px 20px 60px}h1{font-size:clamp(29px,5vw,45px);line-height:1.15;letter-spacing:-1px;margin:35px 0 15px}h2{font-size:20px;margin:0 0 15px}h3{margin:0 0 4px;font-size:14px}a{color:var(--blue)}p{margin:0 0 14px}
+nav{display:flex;justify-content:space-between;gap:14px;border-bottom:1px solid var(--line);padding:0 0 18px;flex-wrap:wrap}nav a{text-decoration:none}
+section{padding:27px 0;border-top:1px solid var(--line)}.lead{color:#c7d9e7;font-size:17px;max-width:770px}
+.small{font-size:12px;color:var(--muted)}.label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--aqua)}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.card{padding:16px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+.value{font:700 28px ui-monospace,monospace;margin:0 0 8px}.card p{color:var(--muted);font-size:12px}
+pre{font:12px/1.6 ui-monospace,Consolas,monospace;overflow:auto;white-space:pre;background:#101b26;border:1px solid var(--line);border-radius:10px;padding:16px}code{font:12px ui-monospace,monospace}
+.cta{display:inline-block;padding:9px 14px;border-radius:7px;background:var(--aqua);color:#04251d;text-decoration:none;font-weight:700;margin:10px 0 26px}
+footer{color:var(--muted);font-size:12px;border-top:1px solid var(--line);padding-top:18px}@media(max-width:650px){.grid{grid-template-columns:1fr}}
+</style></head><body><main>
+<nav><a href="../" class="label">PercInterp</a><div><a href="https://github.com/MoralityLabAI/percolation-interp">Repository</a> · <a href="../">Gödel Globe</a></div></nav>
+<header><h1>Percolation analysis for neural influence graphs</h1><p class="lead">A small NumPy/SciPy Python library for directed source-to-output connectivity profiles, graph nulls and component-selection hypotheses. Bring your own attribution edges, including exported Goodfire VPD or SAE graphs.</p>
+<a class="cta" href="https://github.com/MoralityLabAI/percolation-interp">Browse source and installation</a></header>
+<section><h2>Reference CPU benchmark</h2><div class="grid">
+<div class="card"><div class="value">0.70 ms</div><h3>One-pass PercInterp</h3><p>Compute the min-max DAG profile once, query 41 thresholds.</p></div>
+<div class="card"><div class="value">32.10 ms</div><h3>Repeated SciPy BFS</h3><p>Rebuild a sparse graph and traverse both directions for each threshold.</p></div>
+<div class="card"><div class="value" style="color:var(--aqua)">45.9×</div><h3>Reference speedup</h3><p>Exact agreement on a synthetic graph with 578 nodes and 40,708 edges.</p></div>
+</div><p class="small" style="margin-top:12px">Python 3.12 GitHub runner, 2026-10-22. The comparison is against repeated traversal, not an optimized all-threshold solver or Goodfire inference. <a href="https://github.com/MoralityLabAI/percolation-interp/actions/runs/39766411135">Reproduce from CI</a>.</p></section>
+<section><h2>Minimal API</h2>
+<pre>pip install 'git+https://github.com/MoralityLabAI/percolation-interp'
+
+from percinterp import from_attribution_arrays, profile, rank_entry
+import numpy as np
+
+data = from_attribution_arrays(
+    ['token:0', 'layer0.up:8', 'metric:output'],
+    [0, 1, 2],
+    np.array([0, 1]), np.array([1, 2]),
+    np.array([0.8, -0.4]),
+)
+p = profile(data.graph, rank_entry(data.graph.weight,
+                                  data.graph.edge_layer('dst')))
+print(p.p_span)</pre>
+<p class="small">The example weights are synthetic. Signed edge values and external node IDs are retained; percolation uses their absolute magnitudes. <a href="https://github.com/MoralityLabAI/percolation-interp/blob/master/docs/ADOPTION.md">Read the full API guide</a>.</p></section>
+<section><h2>Goodfire compatibility</h2><p>A dedicated CI job installs Goodfire’s actual <code>param-decomp-formats</code> package from a pinned public commit, checks the <code>ComponentKey(site, component_idx).encoded()</code> contract, and round-trips those IDs through the graph importer. The native identifier test uses synthetic edges. A measured VPD demonstration requires one exported direct-attribution edge table with source run, metric, aggregation method and topological stages.</p>
+<p><a href="https://github.com/MoralityLabAI/percolation-interp/blob/master/docs/GOODFIRE_INTEGRATION.md">Integration contract</a> · <a href="https://github.com/MoralityLabAI/percolation-interp/blob/master/docs/GOODFIRE_PITCH.md">Smallest upstream collaboration</a></p></section>
+<section><h2>Scientific evidence and distribution</h2><p>PercInterp’s graph statistics are useful as diagnostics and as candidates for causal tests. E03 found a small-model component selection benefit; E04 did not establish Qwen transfer; E06/E07 show substantial local-degree confounds; E10’s causal selector comparison awaits saved VPD inference inputs.</p>
+<p>The wheel and source distribution build successfully in <a href="https://github.com/MoralityLabAI/percolation-interp/actions/runs/39766411160">distribution CI</a>. The package is <strong>not yet published to PyPI</strong>. <a href="https://github.com/MoralityLabAI/percolation-interp/blob/master/docs/RELEASING.md">Release guide</a>.</p></section>
+<footer><a href="https://github.com/MoralityLabAI/percolation-interp">MoralityLabAI / PercInterp</a> · Graph measurements are not model-faithfulness certificates.</footer>
+</main></body></html>

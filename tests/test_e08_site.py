@@ -20,6 +20,8 @@ def test_bundles_three_synthetic_connections(tmp_path):
     assert result["fixtures"]["flat"]["p_h"] is None
     assert result["fixtures"]["planted"]["p_h"] == 0.37
     assert (output / "index.html").is_file()
+    assert (output / "library" / "index.html").is_file()
+    assert "Goodfire" in (output / "library" / "index.html").read_text(encoding="utf-8")
     assert (output / ".nojekyll").is_file()
     assert "calibration_data.js" in (output / "index.html").read_text(encoding="utf-8")
 

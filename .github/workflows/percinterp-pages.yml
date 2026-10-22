@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/percinterp-pages.yml'
       - 'ui/godel_globe/**'
+      - 'ui/library/**'
       - 'src/percinterp/cycle_filtration.py'
       - 'src/percinterp/holonomy.py'
       - 'experiments/e08_holonomy_percolation.py'

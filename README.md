@@ -9,6 +9,7 @@ models or require a GPU.
 - **Install:** `pip install "git+https://github.com/MoralityLabAI/percolation-interp"`
 - **Stable import:** `from percinterp import LayeredDAG, profile, rank_entry`
 - **External edges:** `from percinterp.interop import from_attribution_edges`
+- **Library website:** [Installation, API and reference benchmark](https://moralitylabai.github.io/percolation-interp/library/)
 - **Goodfire interoperability:** [component identifiers, topological stages, provenance and cautions](docs/GOODFIRE_INTEGRATION.md)
 - **Standalone example:** [four-node signed attribution graph](examples/from_attribution_edges.py)
 
