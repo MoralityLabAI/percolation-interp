@@ -276,3 +276,13 @@ retained-delta reconstruction and token-local signed hooks on synthetic
 projections. All e08 modules compile. These are CPU implementation checks;
 real artifact reconstruction and batching checks run after e05b/e06 finishes.
 No real e08 outcomes are claimed by these tests.
+
+## Launch setup
+
+Create out/e08 before submitting a detached VRAMorama command whose --out
+argument points into that folder. VRAMorama opens its output file before
+the Python driver can create directories. The first submission failed at
+this file-open step, before running Python or measuring any e08 artifact;
+its lease/worker absence was checked before one corrected launch. The
+corrected native driver is admitted and waiting for the predecessor review.
+No protocol criterion, sample count or guard changed during this correction.

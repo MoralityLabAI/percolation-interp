@@ -1,4 +1,4 @@
-# Handoff, 2026-10-22 05:35 Singapore
+# Handoff, 2026-10-22 09:53 Singapore
 
 Snapshot of everything in flight for the next session, human or agent. The repo
 is `MoralityLabAI/percolation-interp` (GitHub, branch `master`); the local checkout
@@ -29,9 +29,12 @@ after seeing results; log deviations in the design doc.
 
 ### 2. Local follow-through and resource state
 
-- The original e05b driver is running under VRAMorama; seed 0 passed its gate
-  and completed stats. Its 13 GiB attribution lease c7a051ce was admitted at
-  approximately 05:04 Singapore after the GPU blocker was removed.
+- The original e05b driver is running under VRAMorama. Seed 0 completed
+  all 50 attribution batches (102,400 tokens) at 08:43 and saved a
+  1,323,117,113-byte dataset_attributions.pt. The 1,000-shuffle sieve
+  completed at 09:31 with Q1 passing. Its causal stage is active under
+  lease 8865b99c; 24/32 batches were logged at this check. Seed 1 has
+  not yet reached its gate in the sequential driver.
 - The human explicitly authorized stopping the idle nl-steering process.
   PID 30092 was re-verified as the expected text_effects.py job (0% GPU
   utilization, 3.8 GiB held) and stopped at 05:03. GPU memory was released;
@@ -57,11 +60,13 @@ after seeing results; log deviations in the design doc.
   task files and leaving unrelated changes untouched.
 
 
-### 3. e05b local analysis (seed 0 attributions admitted)
+### 3. e05b local analysis (seed 0 Q1 passes; causal running)
 
 Seed 0 passed the gate: CI-masked KL 1.763079 versus limit 1.943471
 (KL_PAMA 7.773885); stats.pt is present. Seed 1 gate is still pending.
-The attribution stage was admitted after the GPU became available. For e06, both graphs count even if
+Seed 0 has completed attribution/sieve analysis and passes Q1; Q2-Q4
+remain pending causal output. This is a partial result, not an e05b
+across-seed verdict. For e06, both graphs count even if
 a gate fails: harvest their stats/attributions without scoring failed seeds
 on e05 Q1-Q4. Never retrain e05b.
 
@@ -147,6 +152,12 @@ following the frozen annotation rules; do not inspect contribution groups
 or intervention effects to choose labels. A single agent reviewer is not
 independent human validation. Resume the same driver through VRAMorama once
 the previous driver has exited. The OS lock prevents duplicate drivers.
+The first deferred launch (b830d0ea) exited before starting Python because
+its log directory did not exist. The directory was created and absence
+of that old lease/worker was verified before one corrected launch.
+The corrected driver is admitted as lease f99d2fa9 (launcher 33836,
+job 42444, Python 55544); out/e08/status.json confirms it is waiting
+for e05b/e06, with no e08 model run started. Preserve this live driver.
 Final outputs: `results/e08/contextual.json`, `weighted.json`, a figure and
 `docs/e08_results.md`; review them before committing/reporting completion.
 Preserve the four-hour model follow-up interval and all existing science
@@ -161,7 +172,7 @@ criteria. Never push or rent; leave unrelated files untouched.
 | e03 | Toy model, VPD + SAE sieve | done, three seeds: VPD sieve + causal pass, SAE fails |
 | e04 | Transfer to Qwen3-0.6B, layers 2-3 | done, two seeds: **not transfer**, Q1 fails. Addendum: about 94% of the zero-ablation gap is the position-0 massive activation, and the causal effect is one attention-sink pair |
 | e05 | Same question, position-aware mean-ablation baselines, layers 0-1 | local seed 0 failed the gate at 20k (KL 2.84 vs 1.94, plateau); seed 1 cancelled |
-| e05b | e05 with an 8× batch (32 × 128) on a rented A6000 | both trained and copied; pod deleted; seed 0 gate passes, attribution job admitted |
+| e05b | e05 with an 8× batch (32 × 128) on a rented A6000 | both trained and copied; pod deleted; seed 0 gate/Q1 pass, causal running; seed 1 pending |
 | e06 | Null models for the sieve's z-curve: coverage vs alignment | pre-registered; e03 seeds 1-2 confirmatory: P1, P2, P4, P5 pass. Waiting on e05b graphs |
 | e07 | Bipartite percolation of VPD component/neuron sharing | done, both saved seeds: contact degree concentration explains most early structural mixing; semantic labels not measured |
 
