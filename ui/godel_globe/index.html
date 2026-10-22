@@ -133,6 +133,19 @@ code { font:11px ui-monospace,monospace; color:#c3d9e6; }
   </table></div>
   <p class="caption">The numbers are the bond-retention values at which the mean largest component cluster reaches 50%. They come from the saved E07 Qwen3-0.6B exploratory study. Degree-preserving rewiring closely reproduces learned connectivity, while uniform contacts mix later. These six rows are observational reference data; they do not supply the globe’s nodes, transports, or holonomy. Semantic polysemanticity remains unmeasured. <a href="https://github.com/MoralityLabAI/percolation-interp/blob/master/docs/e08_site.md">Provenance and method</a>.</p>
 </section>
+<section class="panel reference" aria-labelledby="utility-title">
+  <div class="panel-header"><h2 id="utility-title">Does percolation predict model fidelity? <span class="evidence-label">E09 retrospective utility audit</span></h2><span class="sub">13 grokked MLP runs · five held-out configurations</span></div>
+  <div class="table-outer"><table>
+    <thead><tr><th>Predictor of logit recovery</th><th>Held-out MAE · all points</th><th>MAE · recovery 0.05–0.95</th></tr></thead>
+    <tbody>
+      <tr class="featured"><td>Nominal edge fraction kept</td><td>0.02077</td><td>0.05945</td></tr>
+      <tr><td>Kept outdegree</td><td>0.04543</td><td>0.13483</td></tr>
+      <tr><td>Percolation backbone fraction</td><td>0.05236</td><td>0.16006</td></tr>
+      <tr><td>Nominal kept fraction + backbone residual</td><td>0.02199</td><td>0.06007</td></tr>
+    </tbody>
+  </table></div>
+  <p class="caption">Smaller prediction error is better. Every depth/width group and all its seeds were held out together. This exploratory reanalysis uses E02's saved logit-fidelity curves. The extra backbone measurement did not improve generalization over an inexpensive sparsity coordinate. The positive E03 result for causal component selection remains a separate, narrower possibility. <a href="utility_audit.json">Machine-readable audit</a> · <a href="https://github.com/MoralityLabAI/percolation-interp/blob/master/docs/e09_utility_decision.md">Decision and caveats</a>.</p>
+</section>
 <div class="foot"><span id="footnote">Synthetic calibration dataset. No language-model semantics have been tested.</span><span><a href="https://github.com/MoralityLabAI/percolation-interp">Source repository</a> · <code>percinterp.holonomy.v1</code></span></div>
 </main>
 <script src="calibration_data.js"></script>

@@ -100,3 +100,24 @@ the globe's frames and loops are not measured from Qwen.
 
 To enable public hosting once: **Settings → Pages → Source → GitHub Actions**.
 Run locally with `python experiments/e08_build_site.py --output out/e08_site`.
+
+## E09 evidence gate
+
+[Decision memo](docs/e09_utility_decision.md) · [Retrospective audit source](experiments/e09_utility_audit.py) · [Live scorecard](https://moralitylabai.github.io/percolation-interp/utility_audit.json)
+
+The E02 held-out fidelity analysis finds that a simple retained-edge fraction
+predicts recovery better than the percolation backbone fraction. E03 still
+provides a limited causal component-selection success; E04's Qwen transfer test
+failed, and E06/E07 show strong degree/coverage confounds. E09 contains
+reproducible tests for both an exact degree-preserving reachability difference
+and a signed-cancellation counterexample. **Current decision: narrow retain.**
+
+Run the CPU-only audit with:
+
+```bash
+python experiments/e09_utility_audit.py --output out/e09_utility.json
+python -m pytest -q tests/test_e09_utility_audit.py
+```
+
+The next empirical gate is a held-out causal comparison against matched
+local-degree, mean-CI and strongest-attribution selectors, on a faithful VPD.
