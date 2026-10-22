@@ -12,6 +12,7 @@ models or require a GPU.
 - **Library website:** [Installation, API and reference benchmark](https://moralitylabai.github.io/percolation-interp/library/)
 - **Goodfire interoperability:** [component identifiers, topological stages, provenance and cautions](docs/GOODFIRE_INTEGRATION.md)
 - **Standalone example:** [four-node signed attribution graph](examples/from_attribution_edges.py)
+- **Persona Holonomy Bench:** [PHB v0.8 attribution sieve, held-out causal layer audit, and frame-transport holonomy](docs/PHB_INTEGRATION.md)
 
 ### Bring your own attribution graph
 
