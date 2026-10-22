@@ -115,3 +115,23 @@ def test_seed_aggregation_requires_distinct_frozen_sources():
     with pytest.raises(ValueError):
         combine_seed_results([{"manifest_sha256": "X", "score": s},
                               {"manifest_sha256": "X", "score": s}])
+
+
+def test_historical_degree_preflight_counts_without_retraining():
+    # Assert the E06 saved decimal fractions imply integer counts, including
+    # zero local false negatives under a directed source-to-sink definition.
+    spec = importlib.util.spec_from_file_location("e10_preflight", ROOT / "experiments" / "e10_preflight.py")
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    def doc(n, b, local, c1):
+        return {"n_interior": n, "joint_degree": {"cells": {
+            "c_s": {"c": .1, "degree_determined": {"backbone": b/n, "local": local/n},
+                    "testable": True, "p_high": .07},
+            "c_1": {"c": 1., "degree_determined": {"backbone": c1/n, "local": c1/n},
+                    "testable": False, "p_high": 1},
+        }}}
+    x = module.audit_one(doc(1574, 96, 103, 702), "seed1")
+    y = module.audit_one(doc(1582, 106, 109, 691), "seed2")
+    assert (x["c_s"]["local_false_positives"], y["c_s"]["local_false_positives"]) == (7, 3)
+    assert x["c_1"]["local_false_positives"] == y["c_1"]["local_false_positives"] == 0

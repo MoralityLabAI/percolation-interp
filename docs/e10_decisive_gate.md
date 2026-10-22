@@ -83,3 +83,16 @@ The `--fixture` route is explicitly tagged synthetic and cannot be passed to the
 - E09: retained-edge fraction predicts fidelity across depth/width more accurately than backbone fraction.
 
 This study tests a narrow empirical promise: **does the graph traversal identify better components after controlling local degrees and importance?** It keeps the hypothesis falsifiable with a fixed cost and a strict provenance boundary.
+
+## CPU preflight, recorded after the E10 design commit
+
+The registered E06 joint-degree outputs let us quantify the graph-only difference with **zero new model computation**. `experiments/e10_preflight.py` reproduces this from committed `results/e06/heldout_e03_seed{1,2}.json`.
+
+| Saved E06 seed | Total interior nodes | Actual path-backbone at c=0.1 | Local in/out-degree positives | Extra degree-only candidates | Local precision | Local extras at c=1 |
+|---|---:|---:|---:|---:|---:|---:|
+| E03 seed 1 | 1,574 | 96 | 103 | 7 | 93.2% | 0 |
+| E03 seed 2 | 1,582 | 106 | 109 | 3 | 97.2% | 0 |
+
+A path-backbone interior vertex necessarily has a retained in-edge and retained out-edge; the degree test therefore has perfect sensitivity for these graph definitions. The 7 and 3 extras are degree-eligible nodes without a valid source-to-sink path. E06 found no statistically significant rewiring excess after degree-preserving null tests. These counts describe E06's **c=0.1** analysis, whereas E10's pre-scored causal sieve uses each original E03 `c_star`. The manifests must recompute true overlap at those frozen values.
+
+The preflight is a structural result, not a new causal result or evidence that the few path-only distinctions have any particular behavioral value. The optional `tests/test_e10_runner_mock.py` exercises the causal driver on mocked PyTorch CPU inputs, explicitly marked as synthetic.
