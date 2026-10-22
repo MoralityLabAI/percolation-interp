@@ -29,3 +29,23 @@ a dependency before the demonstration has been reviewed.
 
 See [Goodfire's parameter-decomposition handbook](https://github.com/goodfire-ai/param-decomp/blob/main/docs/handbook.md)
 and [PercInterp's integration guide](GOODFIRE_INTEGRATION.md).
+
+
+## Goodfire's June 2026 architecture decision
+
+Goodfire's completed transition issues
+[#841](https://github.com/goodfire-ai/param-decomp/issues/841) and
+[#842](https://github.com/goodfire-ai/param-decomp/issues/842)
+explicitly removed the live attribution/intervention backend and prompt-attribution
+frontend while migrating the application toward read-only inspection of JAX runs.
+Issue #841 distinguished these removed live-compute endpoints from precomputed
+attribution and investigation readers. The current public source has since been
+refactored further.
+
+That is an important integration constraint. A PercInterp proposal should
+**not** ask Goodfire to reinstate those live endpoints or take on another
+graph-visualization dependency. The small seam is an optional downstream export
+of direct-attribution edges in Goodfire's stable component identity scheme.
+PercInterp can then compute graph profiles in a separate analysis process.
+This remains compatible with Goodfire's documented evidence standard that
+attribution graphs are not themselves faithful computational circuits.
