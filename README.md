@@ -121,3 +121,25 @@ python -m pytest -q tests/test_e09_utility_audit.py
 
 The next empirical gate is a held-out causal comparison against matched
 local-degree, mean-CI and strongest-attribution selectors, on a faithful VPD.
+
+## E10 frozen causal head-to-head
+
+The [prospectively fixed E10 decision gate](docs/e10_decisive_gate.md) tests whether
+the percolation-selected VPD components outperform local-degree, local-weighted-degree,
+mean-CI, absolute-attribution and activity baselines at **identical module budgets**.
+The selectors are frozen from saved graph/statistics inputs before any new inference;
+the follow-up reports paired sequence-level KL and bootstrap uncertainty.
+
+E10's real-model forward pass requires E03 VPD/target checkpoints and attribution
+tensors saved outside GitHub, so CI tests only its math, synthetic selector fixtures,
+and syntax. No causal E10 pass/fail result has been claimed.
+
+```bash
+python -m pytest -q tests/test_e10_selectors.py
+python experiments/e10_prepare.py --fixture --output out/e10_fixture.json
+# With original E03 inputs:
+python experiments/e10_prepare.py --e03-dir out/e03_seed1 --output out/e10_seed1/manifest.json
+python experiments/e10_e03_causal.py --e03-dir out/e03_seed1 --manifest out/e10_seed1/manifest.json --output out/e10_seed1/causal.json --device cuda
+```
+
+[Live synthetic selector manifest](https://moralitylabai.github.io/percolation-interp/e10_fixture.json).

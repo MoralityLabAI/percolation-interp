@@ -146,6 +146,10 @@ code { font:11px ui-monospace,monospace; color:#c3d9e6; }
   </table></div>
   <p class="caption">Smaller prediction error is better. Every depth/width group and all its seeds were held out together. This exploratory reanalysis uses E02's saved logit-fidelity curves. The extra backbone measurement did not improve generalization over an inexpensive sparsity coordinate. The positive E03 result for causal component selection remains a separate, narrower possibility. <a href="utility_audit.json">Machine-readable audit</a> · <a href="https://github.com/MoralityLabAI/percolation-interp/blob/master/docs/e09_utility_decision.md">Decision and caveats</a>.</p>
 </section>
+<section class="panel reference" aria-labelledby="e10-title">
+  <div class="panel-header"><h2 id="e10-title">E10 causal selector head-to-head <span class="evidence-label">Prepared / awaiting saved VPD inputs</span></h2><span class="sub">Fixed budgets · no new retraining</span></div>
+  <p class="caption">E10 now freezes the sieve's component set and compares it with degree, weighted degree, mean causal importance, absolute attribution and firing-rate selection. The CPU implementation and synthetic fixture are testable here; actual model KL scores require the saved E03 checkpoint and attribution tensors still on the research workstation. If a degree-only selector chooses the exact same components, that case has zero incremental percolation benefit by construction. <a href="e10_fixture.json">Synthetic selector manifest</a> · <a href="https://github.com/MoralityLabAI/percolation-interp/blob/master/docs/e10_decisive_gate.md">Fixed decision protocol</a>.</p>
+</section>
 <div class="foot"><span id="footnote">Synthetic calibration dataset. No language-model semantics have been tested.</span><span><a href="https://github.com/MoralityLabAI/percolation-interp">Source repository</a> · <code>percinterp.holonomy.v1</code></span></div>
 </main>
 <script src="calibration_data.js"></script>

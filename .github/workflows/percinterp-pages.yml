@@ -15,6 +15,13 @@ on:
       - 'tests/test_e09_utility_audit.py'
       - 'experiments/e09_utility_audit.py'
       - 'docs/e09_utility_decision.md'
+      - 'docs/e10_decisive_gate.md'
+      - 'src/percinterp/selector_gate.py'
+      - 'src/percinterp/causal_gate.py'
+      - 'experiments/e10_prepare.py'
+      - 'experiments/e10_e03_causal.py'
+      - 'experiments/e10_score.py'
+      - 'tests/test_e10_selectors.py'
   workflow_dispatch:
 
 permissions:
@@ -37,12 +44,16 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -e . pytest
-      - name: Verify E08 calibrations and E09 utility comparisons
-        run: python -m pytest -q tests/test_holonomy_percolation.py tests/test_e08_site.py tests/test_e09_utility_audit.py
+      - name: Verify E08 E09 and E10 CPU gates
+        run: python -m pytest -q tests/test_holonomy_percolation.py tests/test_e08_site.py tests/test_e09_utility_audit.py tests/test_e10_selectors.py
+      - name: Syntax-check optional E10 causal driver
+        run: python -m compileall -q experiments/e10_e03_causal.py experiments/e10_score.py
       - name: Build static Pages payload
         run: python experiments/e08_build_site.py --output site
       - name: Audit historical percolation utility
         run: python experiments/e09_utility_audit.py --output site/utility_audit.json
+      - name: Export E10 synthetic selector fixture
+        run: python experiments/e10_prepare.py --fixture --output site/e10_fixture.json
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
         with:
