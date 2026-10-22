@@ -1,0 +1,59 @@
+name: PercInterp E08 site
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - '.github/workflows/percinterp-pages.yml'
+      - 'ui/godel_globe/**'
+      - 'src/percinterp/cycle_filtration.py'
+      - 'src/percinterp/holonomy.py'
+      - 'experiments/e08_holonomy_percolation.py'
+      - 'experiments/e08_build_site.py'
+      - 'tests/test_holonomy_percolation.py'
+      - 'tests/test_e08_site.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: percinterp-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: Install minimal dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e . pytest
+      - name: Verify holonomy and website fixtures
+        run: python -m pytest -q tests/test_holonomy_percolation.py tests/test_e08_site.py
+      - name: Build static Pages payload
+        run: python experiments/e08_build_site.py --output site
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

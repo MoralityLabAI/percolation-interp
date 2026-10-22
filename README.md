@@ -86,3 +86,17 @@ How the measurement works:
 - Together these give the spanning point (the widest-path bottleneck) and the
   backbone membership of every node and edge, for every p at once, in O(E).
 - Tests check all of this against brute-force search and against the exact chain.
+
+## E08 globe / browser staging
+
+A CPU-only holonomy-percolation calibration with a static interactive Gödel Globe.
+The three six-node fixtures are **synthetic** (planted, flat, tangent-frame).
+The site's separate Qwen E07 table reports observed contact-degree crossovers;
+the globe's frames and loops are not measured from Qwen.
+
+- [Interactive site (after GitHub Pages enablement)](https://moralitylabai.github.io/percolation-interp/)
+- [Experiment and provenance](docs/e08_site.md)
+- [Build and publishing workflow](.github/workflows/percinterp-pages.yml)
+
+To enable public hosting once: **Settings → Pages → Source → GitHub Actions**.
+Run locally with `python experiments/e08_build_site.py --output out/e08_site`.

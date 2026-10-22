@@ -14,6 +14,10 @@ header { display:flex; align-items:center; gap:14px; justify-content:space-betwe
 .brand { font-size:23px; letter-spacing:-.8px; font-weight:700; }
 .brand span { color:var(--aqua); }
 .overline { text-transform:uppercase; letter-spacing:2px; color:var(--muted); font-size:10px; font-weight:650; }
+.top-controls { display:flex; align-items:center; justify-content:flex-end; gap:14px; flex-wrap:wrap; }
+.fixture-group { min-width:170px; }
+.fixture-group label { display:block; margin:0 0 3px; font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:1.3px; }
+.fixture-group select { margin:0; padding:7px 9px; min-width:170px; }
 .tag { background:#172838; border:1px solid #35506b; border-radius:999px; padding:5px 11px; color:#d3e1ed; font-size:11px; }
 .intro { color:var(--muted); max-width:800px; margin:18px 0 24px; }
 .layout { display:grid; grid-template-columns:minmax(0, 1.6fr) minmax(310px,1fr); gap:16px; }
@@ -44,6 +48,17 @@ button.primary { color:#03151a; background:var(--aqua); border-color:var(--aqua)
 #chart { width:100%; height:170px; margin-top:12px; display:block; }
 .legend { display:flex; flex-wrap:wrap; gap:13px; font-size:12px; color:var(--muted); }
 .legend b { margin-right:5px; }
+.reference { margin-top:16px; }
+.reference .evidence-label { display:inline-block; margin-left:6px; font-size:10px; border:1px solid #45667a; border-radius:10px; color:#bed0dc; padding:2px 9px; }
+.reference table { border-collapse:collapse; width:100%; min-width:625px; font:12px/1.5 ui-monospace,Consolas,monospace; }
+.reference th,.reference td { border-bottom:1px solid var(--border); text-align:left; padding:9px 10px; white-space:nowrap; }
+.reference th { color:var(--muted); font-weight:500; }
+.reference td:first-child { color:var(--ink); font-family:ui-sans-serif,system-ui,sans-serif; }
+.reference tr.featured td { background:#1a3039; }
+.reference tbody tr:last-child td { border-bottom:0; }
+.reference .table-outer { overflow-x:auto; margin-top:13px; }
+.reference .caption { color:var(--muted); max-width:940px; font-size:12px; line-height:1.7; margin:12px 0 0; }
+.reference a,.foot a { color:var(--blue); }
 .foot { display:flex; justify-content:space-between; gap:14px; border-top:1px solid var(--border); padding-top:16px; margin-top:22px; color:var(--muted); font-size:12px; flex-wrap:wrap; }
 code { font:11px ui-monospace,monospace; color:#c3d9e6; }
 @media(max-width:800px) { .layout {grid-template-columns:1fr;} main {padding:16px 12px 40px;} #sphere {height:340px;} }
@@ -54,9 +69,16 @@ code { font:11px ui-monospace,monospace; color:#c3d9e6; }
 <header>
   <div><div class="overline">Mechanistic interpretability / experimental geometry</div>
   <div class="brand">Perc<span>Interp</span> <span style="font-size:14px;color:#99b2c5;font-weight:500">/ Gödel Globe</span></div></div>
-  <div id="provenance" class="tag">LOADING CALIBRATION</div>
+  <div class="top-controls">
+    <div class="fixture-group"><label for="fixture-select">Connection fixture</label><select id="fixture-select" aria-label="Synthetic connection fixture">
+      <option value="planted">Planted · 45° / 90°</option>
+      <option value="flat">Flat · identity</option>
+      <option value="tangent">Spherical tangent frames</option>
+    </select></div>
+    <div id="provenance" class="tag">LOADING CALIBRATION</div>
+  </div>
 </header>
-<p class="intro">A nested bond-percolation graph with a transported feature compass. The dashed needle marks the starting orientation; the solid needle accumulates the connection along a closed path. Drag the globe to inspect it.</p>
+<p class="intro">Explore cycle birth and discrete frame transport on a nested percolation graph. The dashed needle is the starting frame, the solid needle its transported orientation. Drag the globe to inspect it. <strong style="color:var(--gold)">This interactive globe uses synthetic calibrations.</strong> Measured Qwen VPD crossover values appear separately below.</p>
 <section class="layout">
 <div class="panel">
   <div class="panel-header"><h2>Contact globe</h2><span class="sub">Component ● &nbsp; Coordinate ◆</span></div>
@@ -96,15 +118,39 @@ code { font:11px ui-monospace,monospace; color:#c3d9e6; }
   <p class="note">The compass animation uses measured cumulative edge matrices for the selected loop. Camera rotation is a separate visualization control. Geometry becomes scientific evidence only with certified activation-conditioned frames and causal validation.</p>
 </div>
 </section>
-<div class="foot"><span id="footnote">Synthetic calibration dataset. No language-model semantics have been tested.</span><span><code>percinterp.holonomy.v1</code></span></div>
+<section class="panel reference" aria-labelledby="reference-title">
+  <div class="panel-header"><h2 id="reference-title">Qwen VPD contact-degree results <span class="evidence-label">E07 measured / static reference</span></h2><span class="sub">Two decomposition seeds · one target model</span></div>
+  <div class="table-outer"><table>
+    <thead><tr><th>Coordinate role</th><th>Learned · seeds 0 / 1</th><th>Degree rewired · seeds 0 / 1</th><th>Uniform · seeds 0 / 1</th></tr></thead>
+    <tbody>
+      <tr class="featured"><td>L0 gate write</td><td>0.151 / 0.153</td><td>0.152 / 0.153</td><td>0.326 / 0.331</td></tr>
+      <tr><td>L0 up write</td><td>0.303 / 0.300</td><td>0.303 / 0.301</td><td>0.326 / 0.329</td></tr>
+      <tr><td>L0 down read</td><td>0.307 / 0.305</td><td>0.307 / 0.303</td><td>0.326 / 0.328</td></tr>
+      <tr><td>L1 gate write</td><td>0.231 / 0.228</td><td>0.230 / 0.227</td><td>0.325 / 0.325</td></tr>
+      <tr><td>L1 up write</td><td>0.177 / 0.177</td><td>0.178 / 0.175</td><td>0.327 / 0.327</td></tr>
+      <tr><td>L1 down read</td><td>0.222 / 0.222</td><td>0.223 / 0.222</td><td>0.328 / 0.326</td></tr>
+    </tbody>
+  </table></div>
+  <p class="caption">The numbers are the bond-retention values at which the mean largest component cluster reaches 50%. They come from the saved E07 Qwen3-0.6B exploratory study. Degree-preserving rewiring closely reproduces learned connectivity, while uniform contacts mix later. These six rows are observational reference data; they do not supply the globe’s nodes, transports, or holonomy. Semantic polysemanticity remains unmeasured. <a href="https://github.com/MoralityLabAI/percolation-interp/blob/master/docs/e08_site.md">Provenance and method</a>.</p>
+</section>
+<div class="foot"><span id="footnote">Synthetic calibration dataset. No language-model semantics have been tested.</span><span><a href="https://github.com/MoralityLabAI/percolation-interp">Source repository</a> · <code>percinterp.holonomy.v1</code></span></div>
 </main>
-<script src="demo_data.js"></script>
+<script src="calibration_data.js"></script>
 <script>
 "use strict";
 (() => {
- const D = window.PERCINTERP_DATA;
  const $ = id => document.getElementById(id);
- if (!D) { $("footnote").textContent = "Missing demo_data.js. Run experiments/e08_holonomy_percolation.py."; return; }
+ const query = new URLSearchParams(window.location.search);
+ const modeParam = query.get("fixture") || "planted";
+ const mode = Object.prototype.hasOwnProperty.call(window.PERCINTERP_CALIBRATIONS || {}, modeParam) ? modeParam : "planted";
+ const D = window.PERCINTERP_CALIBRATIONS?.[mode];
+ if (!D) { $("footnote").textContent = "Missing calibration_data.js. Run experiments/e08_build_site.py."; return; }
+ $("fixture-select").value = mode;
+ $("fixture-select").addEventListener("change", event => {
+   const next = new URL(window.location.href);
+   next.searchParams.set("fixture", event.target.value);
+   window.location.assign(next.href);
+ });
  $("provenance").textContent = `${D.provenance.type.replaceAll("_"," ")} / ${D.provenance.mode.toUpperCase()}`;
  let p = 0.5, yaw = -0.10, pitch = 0.08, selected = 0, progress = null, last = 0;
  let courierPlaying = false, dragging = null;
