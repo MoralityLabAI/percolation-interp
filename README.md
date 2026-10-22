@@ -37,6 +37,35 @@ namespaced strings. **It consumes exported edges and never assumes a private
 Goodfire checkpoint format.** Experimental causal claims require a validated
 source decomposition, appropriate nulls, and held-out interventions.
 
+
+### Portable graph files and the Goodfire identifier contract
+
+For edge arrays exported by NumPy or JAX, use `from_attribution_arrays` to avoid creating
+a Python tuple for every edge. Serialize a graph with `save_graph_npz()` and reload
+it with `load_graph_npz()`. Archives contain signed edge values and
+external node IDs and are loaded with pickle disabled.
+
+```python
+from percinterp import from_attribution_arrays, save_graph_npz, load_graph_npz
+import numpy as np
+
+data = from_attribution_arrays(
+    ["token:0", "layer0.up:8", "metric:out"], [0, 1, 2],
+    np.array([0, 1]), np.array([1, 2]), np.array([0.8, -0.4]),
+)
+save_graph_npz("influence.npz", data, provenance={"method": "synthetic_example"})
+loaded, metadata = load_graph_npz("influence.npz")
+```
+
+[Adoption overview](docs/ADOPTION.md) ·
+[Goodfire component-identity contract](examples/goodfire_component_keys.py) ·
+[CPU threshold sweep benchmark](benchmarks/profile_vs_resweep.py) ·
+[Release readiness](docs/RELEASING.md).
+
+The current Goodfire `param-decomp-formats` dependency is checked separately in CI
+against a pinned upstream commit. The identifier implementation is genuine
+Goodfire code; its sample graph edges are synthetic.
+
 ### Scientific scope and results
 
 PercInterp began as a research program asking whether connectivity signals

@@ -1,0 +1,41 @@
+name: PercInterp distribution dry-run
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths:
+      - '.github/workflows/distribution.yml'
+      - 'pyproject.toml'
+      - 'src/percinterp/**'
+      - 'README.md'
+      - 'CHANGELOG.md'
+      - 'docs/RELEASING.md'
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install packaging tools
+        run: python -m pip install --upgrade pip build twine
+      - name: Build wheel and source distribution
+        run: python -m build
+      - name: Validate package metadata
+        run: python -m twine check dist/*
+      - name: Verify installed wheel imports
+        run: |
+          python -m pip install dist/*.whl
+          python -c "from percinterp import profile, from_attribution_arrays, save_graph_npz, load_graph_npz; print('package imports OK')"
+      - name: Preserve dry-run package files
+        uses: actions/upload-artifact@v4
+        with:
+          name: percinterp-distributions
+          path: dist/*
+          retention-days: 14

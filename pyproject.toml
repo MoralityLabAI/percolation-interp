@@ -31,6 +31,8 @@ dev = ["pytest>=8", "torch>=2.2", "matplotlib>=3.8"]
 Repository = "https://github.com/MoralityLabAI/percolation-interp"
 Documentation = "https://github.com/MoralityLabAI/percolation-interp/blob/master/docs/GOODFIRE_INTEGRATION.md"
 Issues = "https://github.com/MoralityLabAI/percolation-interp/issues"
+Changelog = "https://github.com/MoralityLabAI/percolation-interp/blob/master/CHANGELOG.md"
+ReleaseGuide = "https://github.com/MoralityLabAI/percolation-interp/blob/master/docs/RELEASING.md"
 
 [build-system]
 requires = ["setuptools>=68"]

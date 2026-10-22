@@ -80,3 +80,29 @@ import path runs on CPU and requires only NumPy and SciPy, so it can sit in
 a lightweight analysis process or a CI job instead of acquiring the model's
 full training dependencies. A native exporter for a documented Goodfire
 attribution artifact can be added once that artifact contract is stable.
+
+
+## NumPy/JAX arrays, portable files, and pinned contract verification
+
+For large exported graphs, use the indexed `from_attribution_arrays` importer
+rather than materializing per-edge Python tuples. Input indices reference the
+original node list; stage-sort and edge remapping are automatic. JAX producers
+should call `jax.device_get` before importing to control host transfer explicitly.
+The importer retains the signed edge vector.
+
+Use `save_graph_npz(path, imported, provenance={...})` to preserve vertex
+identities, topology, edge signs, boundary masks, and provenance. 
+`load_graph_npz(path)` checks schema and topology with
+`allow_pickle=False`. Provenance is supplied by the producer and does not
+independently certify its attribution method.
+
+The compatibility check installs the public Goodfire
+`param-decomp-formats` package from commit
+`177d0cce809896d9d84b2bd04bbc2e319c64e9d0`, verifies the real
+`ComponentKey` encoder/decoder, and round-trips those keys through a
+*synthetic* graph. The present Goodfire public tree does not include a
+stable ready-to-import attribution-edge table suitable for an independent
+end-to-end measured demonstration. Such an export would complete the bridge.
+
+For a detailed library-to-Goodfire integration request, see
+[Goodfire adoption pitch](GOODFIRE_PITCH.md).
