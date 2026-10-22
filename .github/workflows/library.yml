@@ -1,0 +1,45 @@
+name: PercInterp library
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - '.github/workflows/library.yml'
+      - 'src/percinterp/**'
+      - 'examples/from_attribution_edges.py'
+      - 'tests/test_interop.py'
+      - 'pyproject.toml'
+  pull_request:
+    paths:
+      - '.github/workflows/library.yml'
+      - 'src/percinterp/**'
+      - 'examples/from_attribution_edges.py'
+      - 'tests/test_interop.py'
+      - 'pyproject.toml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  core:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.12', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install library and tests
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e . pytest build
+      - name: Check core graph and interchange APIs
+        run: python -m pytest -q tests/test_interop.py tests/test_measure.py tests/test_sieve.py tests/test_theory.py
+      - name: Run documented example
+        run: python examples/from_attribution_edges.py
+      - name: Build wheel and source distribution
+        run: python -m build

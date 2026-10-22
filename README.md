@@ -1,11 +1,58 @@
-# percolation-interp
+# PercInterp
 
-Percolation theory applied to mechanistic-interpretability influence graphs.
-Threshold a network's causal-influence graph, sweep the kept fraction p, and ask
-three questions:
-- Is circuit fidelity gated by connectivity?
-- How do trained graphs differ from shuffled and at-init controls?
-- Does circuit formation show up as a connectivity event?
+**Lightweight percolation analysis for directed neural influence graphs.**
+Sweep edge thresholds, compute directed source-to-output backbones, compare
+against randomized controls, and recover candidate components for downstream
+intervention tests. The core package uses NumPy and SciPy; it does not load
+models or require a GPU.
+
+- **Install:** `pip install "git+https://github.com/MoralityLabAI/percolation-interp"`
+- **Stable import:** `from percinterp import LayeredDAG, profile, rank_entry`
+- **External edges:** `from percinterp.interop import from_attribution_edges`
+- **Goodfire interoperability:** [component identifiers, topological stages, provenance and cautions](docs/GOODFIRE_INTEGRATION.md)
+- **Standalone example:** [four-node signed attribution graph](examples/from_attribution_edges.py)
+
+### Bring your own attribution graph
+
+```python
+from percinterp.interop import from_attribution_edges
+from percinterp import rank_entry, profile
+
+imported = from_attribution_edges(
+    node_ids=["token:0", "block0.gate:12", "output:logit"],
+    layers=[0, 1, 2],
+    edges=[("token:0", "block0.gate:12", 0.7),
+           ("block0.gate:12", "output:logit", -0.4)],
+)
+graph = imported.graph
+entry = rank_entry(graph.weight, graph.edge_layer("dst"))
+paths = profile(graph, entry)
+print(paths.p_span, imported.selected_ids(paths.node_entry <= 1))
+```
+
+External identifiers survive graph construction. The importer preserves each
+edge's signed value separately and supplies its magnitude for percolation.
+Users can feed Goodfire `ComponentKey.encoded()` identifiers or other
+namespaced strings. **It consumes exported edges and never assumes a private
+Goodfire checkpoint format.** Experimental causal claims require a validated
+source decomposition, appropriate nulls, and held-out interventions.
+
+### Scientific scope and results
+
+PercInterp began as a research program asking whether connectivity signals
+help locate faithful circuits. Results are mixed: E03's small-model VPD
+selection outperformed top individual causal-importance ranking, while Qwen
+transfer was not established; E06/E07 find strong degree-based explanations
+for structural connectivity. E09 finds retained-edge fraction predicts
+fidelity across widths and depths better than backbone fraction. The E10
+causal head-to-head remains pending real saved VPD inputs. See the
+[E09 utility audit](docs/e09_utility_decision.md) and
+[E10 fixed causal protocol](docs/e10_decisive_gate.md).
+
+The library's percolation observables are graph statistics and selection
+hypotheses. Connectivity alone does not establish mechanistic fidelity.
+
+### Research notebook and experiment index
 
 - `docs/HANDOFF.md`: live processes and state as of 2026-10-21 (read first when resuming)
 - `docs/plan.md`: the research plan, with predictions written before running
