@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>PercInterp · Gödel Globe</title>
+<style>
+:root { color-scheme:dark; --bg:#0b1018; --surface:#111c28; --border:#27384a;
+  --muted:#9aaebe; --ink:#ecf4fb; --aqua:#4adacb; --gold:#f4b769; --blue:#82aef0; }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.5 ui-sans-serif,system-ui,Segoe UI,Arial,sans-serif; }
+main { max-width:1250px; padding:28px 24px 56px; margin:auto; }
+header { display:flex; align-items:center; gap:14px; justify-content:space-between; flex-wrap:wrap; padding-bottom:20px; border-bottom:1px solid var(--border); }
+.brand { font-size:23px; letter-spacing:-.8px; font-weight:700; }
+.brand span { color:var(--aqua); }
+.overline { text-transform:uppercase; letter-spacing:2px; color:var(--muted); font-size:10px; font-weight:650; }
+.tag { background:#172838; border:1px solid #35506b; border-radius:999px; padding:5px 11px; color:#d3e1ed; font-size:11px; }
+.intro { color:var(--muted); max-width:800px; margin:18px 0 24px; }
+.layout { display:grid; grid-template-columns:minmax(0, 1.6fr) minmax(310px,1fr); gap:16px; }
+.panel { border:1px solid var(--border); border-radius:15px; background:var(--surface); padding:19px; }
+.panel-header { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+h2 { font-size:14px; font-weight:650; margin:0; letter-spacing:.2px; }
+.sub { color:var(--muted); font-size:12px; }
+#sphere { width:100%; height:455px; display:block; cursor:grab; touch-action:none; }
+#sphere:active { cursor:grabbing; }
+.slider-top { display:flex; align-items:end; justify-content:space-between; margin:5px 0; }
+.big { font:600 26px/1.2 ui-monospace,Consolas,monospace; }
+input[type=range] { width:100%; accent-color:var(--aqua); }
+.scale { display:flex; justify-content:space-between; font:11px ui-monospace,monospace; color:var(--muted); }
+.stats { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:17px 0; }
+.stat { border:1px solid var(--border); background:#0d1722; border-radius:10px; padding:11px 13px; }
+.stat strong { display:block; font-size:21px; font-family:ui-monospace,Consolas,monospace; margin:2px 0; }
+.stat small { color:var(--muted); font-size:11px; }
+.stat .aqua { color:var(--aqua); }
+.stat .gold { color:var(--gold); }
+select,button { color:var(--ink); border:1px solid #3b5267; border-radius:8px; background:#183042; font:inherit; padding:9px 12px; }
+select { display:block; width:100%; margin:6px 0 13px; }
+button { cursor:pointer; }
+button:hover { border-color:var(--aqua); }
+button:disabled { opacity:.4; cursor:not-allowed; }
+.actions { display:flex; gap:8px; flex-wrap:wrap; }
+button.primary { color:#03151a; background:var(--aqua); border-color:var(--aqua); font-weight:700; }
+.note { font-size:12px; color:var(--muted); line-height:1.55; margin:12px 0 0; }
+#chart { width:100%; height:170px; margin-top:12px; display:block; }
+.legend { display:flex; flex-wrap:wrap; gap:13px; font-size:12px; color:var(--muted); }
+.legend b { margin-right:5px; }
+.foot { display:flex; justify-content:space-between; gap:14px; border-top:1px solid var(--border); padding-top:16px; margin-top:22px; color:var(--muted); font-size:12px; flex-wrap:wrap; }
+code { font:11px ui-monospace,monospace; color:#c3d9e6; }
+@media(max-width:800px) { .layout {grid-template-columns:1fr;} main {padding:16px 12px 40px;} #sphere {height:340px;} }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <div><div class="overline">Mechanistic interpretability / experimental geometry</div>
+  <div class="brand">Perc<span>Interp</span> <span style="font-size:14px;color:#99b2c5;font-weight:500">/ Gödel Globe</span></div></div>
+  <div id="provenance" class="tag">LOADING CALIBRATION</div>
+</header>
+<p class="intro">A nested bond-percolation graph with a transported feature compass. The dashed needle marks the starting orientation; the solid needle accumulates the connection along a closed path. Drag the globe to inspect it.</p>
+<section class="layout">
+<div class="panel">
+  <div class="panel-header"><h2>Contact globe</h2><span class="sub">Component ● &nbsp; Coordinate ◆</span></div>
+  <canvas id="sphere" aria-label="Interactive projection of the contact graph and transported feature compass"></canvas>
+  <div class="legend"><span><b style="color:var(--aqua)">━</b> Retained bonds</span><span><b style="color:var(--gold)">━</b> Selected loop</span><span><b style="color:var(--blue)">↑</b> Starting frame</span></div>
+  <p class="note" id="courier-readout">Select a born loop, then run the courier to transport the feature frame around it.</p>
+</div>
+<div class="panel">
+  <div class="panel-header"><h2>Bond filtration</h2><span class="sub">Nested keys, fixed realization</span></div>
+  <div class="slider-top"><label for="occupation" class="sub">Bond retention p</label><output id="occupation-value" class="big">0.50</output></div>
+  <input id="occupation" type="range" min="0" max="1" step="0.01" value="0.50"/>
+  <div class="scale"><span>0</span><span>1</span></div>
+  <div class="stats">
+    <div class="stat"><small>Largest component fraction</small><strong class="aqua" id="largest">—</strong></div>
+    <div class="stat"><small>Cycle rank β₁</small><strong id="betti">—</strong></div>
+    <div class="stat"><small>Retained edges</small><strong id="edges">—</strong></div>
+    <div class="stat"><small>First holonomy p<sub>H</sub></small><strong class="gold" id="onset">—</strong></div>
+  </div>
+  <label for="loop-select" class="sub">Certified fundamental loop</label>
+  <select id="loop-select"></select>
+  <div class="actions"><button class="primary" id="play">Run loop courier</button><button id="reset">Reset camera</button></div>
+  <p id="loop-desc" class="note"></p>
+</div>
+<div class="panel">
+  <div class="panel-header"><h2>Percolation observables</h2><span class="sub">As edges enter</span></div>
+  <canvas id="chart" aria-label="Largest cluster fraction and first Betti number over bond retention p"></canvas>
+  <div class="legend"><span><b style="color:var(--aqua)">━</b> Largest / components</span><span><b style="color:var(--gold)">━</b> β₁ / independent cycles</span><span><b style="color:var(--blue)">┊</b> Selected p</span></div>
+</div>
+<div class="panel">
+  <div class="panel-header"><h2>Holonomy readout</h2><span class="sub">Gauge-invariant scalars</span></div>
+  <div class="stats">
+    <div class="stat"><small>Loop birth</small><strong id="birth">—</strong></div>
+    <div class="stat"><small>Rotation magnitude</small><strong class="gold" id="angle">—</strong></div>
+    <div class="stat"><small>‖H − I‖<sub>F</sub></small><strong id="deviation">—</strong></div>
+    <div class="stat"><small>det(H)</small><strong id="det">—</strong></div>
+  </div>
+  <p class="note">The compass animation uses measured cumulative edge matrices for the selected loop. Camera rotation is a separate visualization control. Geometry becomes scientific evidence only with certified activation-conditioned frames and causal validation.</p>
+</div>
+</section>
+<div class="foot"><span id="footnote">Synthetic calibration dataset. No language-model semantics have been tested.</span><span><code>percinterp.holonomy.v1</code></span></div>
+</main>
+<script src="demo_data.js"></script>
+<script>
+"use strict";
+(() => {
+ const D = window.PERCINTERP_DATA;
+ const $ = id => document.getElementById(id);
+ if (!D) { $("footnote").textContent = "Missing demo_data.js. Run experiments/e08_holonomy_percolation.py."; return; }
+ $("provenance").textContent = `${D.provenance.type.replaceAll("_"," ")} / ${D.provenance.mode.toUpperCase()}`;
+ let p = 0.5, yaw = -0.10, pitch = 0.08, selected = 0, progress = null, last = 0;
+ let courierPlaying = false, dragging = null;
+ const sphere = $("sphere"), graph = $("chart"), slider = $("occupation"), select = $("loop-select");
+ const cl = (x,a,b) => Math.max(a,Math.min(b,x));
+ const fmt = x => x == null ? "—" : Number(x).toFixed(3);
+ const points = D.nodes.map(n => {
+   const lat = n.lat * Math.PI/180, lon = n.lon * Math.PI/180;
+   return [Math.cos(lat)*Math.cos(lon), Math.cos(lat)*Math.sin(lon), Math.sin(lat)];
+ });
+ function context(canvas) {
+   const w = canvas.clientWidth, h = canvas.clientHeight, scale = devicePixelRatio || 1;
+   if(canvas.width !== Math.round(w*scale) || canvas.height !== Math.round(h*scale)) {
+     canvas.width = Math.round(w*scale); canvas.height = Math.round(h*scale);
+   }
+   const c = canvas.getContext("2d"); c.setTransform(scale,0,0,scale,0,0); return [c,w,h];
+ }
+ function rotate(v) {
+   const [x,y,z] = v, cy=Math.cos(yaw), sy=Math.sin(yaw), cp=Math.cos(pitch), sp=Math.sin(pitch);
+   const a=cy*x+sy*z, b=-sy*x+cy*z;
+   return [a,cp*y-sp*b,sp*y+cp*b];
+ }
+ function proj(v,w,h,r) {
+   const [x,y,z] = rotate(v);
+   return [w/2 + x*r, h/2 - y*r, z];
+ }
+ function slerp(a,b,t) {
+   const dot=cl(a[0]*b[0]+a[1]*b[1]+a[2]*b[2],-1,1), a0=Math.acos(dot);
+   if(a0<1e-6) return a;
+   const s=Math.sin(a0), wa=Math.sin((1-t)*a0)/s, wb=Math.sin(t*a0)/s;
+   return [wa*a[0]+wb*b[0],wa*a[1]+wb*b[1],wa*a[2]+wb*b[2]];
+ }
+ function track(c,w,h,r,from,to,color,width) {
+   c.beginPath(); let opened=false;
+   for(let i=0;i<=45;i++) {
+     const [x,y,z]=proj(slerp(from,to,i/45),w,h,r);
+     if(z>-.02) { if(!opened) c.moveTo(x,y); else c.lineTo(x,y); opened=true; }
+     else if(opened) { c.stroke(); c.beginPath(); opened=false; }
+   }
+   c.strokeStyle=color; c.lineWidth=width; c.stroke();
+ }
+ function line3(c,w,h,r,points,color,width) {
+   c.beginPath();let active=false;
+   for(const point of points) {
+     const [x,y,z]=proj(point,w,h,r);
+     if(z>=0) { if(!active) c.moveTo(x,y); else c.lineTo(x,y); active=true; }
+     else if(active) {c.stroke();c.beginPath();active=false;}
+   }
+   c.strokeStyle=color;c.lineWidth=width;c.stroke();
+ }
+ function needle(c,cx,cy,theta,len,color,weight=2,dash=[]) {
+   c.save();c.translate(cx,cy);c.rotate(theta);c.beginPath();c.moveTo(0,7);c.lineTo(0,-len);
+   c.strokeStyle=color;c.lineWidth=weight;c.setLineDash(dash);c.stroke();
+   c.beginPath();c.moveTo(-5,-len+8);c.lineTo(0,-len);c.lineTo(5,-len+8);c.stroke();c.restore();
+ }
+ function currentLoop() { return D.loops[selected]; }
+ function available(loop) { return !!loop && loop.birth<=p+1e-9; }
+ function courierAngle(loop, t) {
+   if(t==null) return 0;
+   const i=Math.min(loop.steps.length-1,Math.floor(t)), f=cl(t-i,0,1);
+   let radians=0;
+   for(let k=0;k<=i;k++) {
+     const mat=loop.steps[k].matrix;
+     const delta=Math.atan2(mat[1][0]-mat[0][1],mat[0][0]+mat[1][1]);
+     radians+=delta*(k===i?f:1);
+   }
+   return radians;
+ }
+ function drawSphere() {
+   const [c,w,h]=context(sphere), r=Math.min(w*.33,h*.395), cx=w/2,cy=h/2;
+   c.clearRect(0,0,w,h);
+   const gradient=c.createRadialGradient(cx-r*.4,cy-r*.5,6,cx,cy,r*1.3);
+   gradient.addColorStop(0,"#203d55");gradient.addColorStop(.6,"#122334");gradient.addColorStop(1,"#08121e");
+   c.fillStyle=gradient;c.beginPath();c.arc(cx,cy,r,0,2*Math.PI);c.fill();
+   c.strokeStyle="#55778c";c.lineWidth=1;c.stroke();
+   for(let lat=-60;lat<=60;lat+=30) {
+     const arc=Array.from({length:145},(_,i)=>{let x=(i*2.5-180)*Math.PI/180,t=lat*Math.PI/180;
+       return [Math.cos(t)*Math.cos(x),Math.cos(t)*Math.sin(x),Math.sin(t)];});
+     line3(c,w,h,r,arc,"#375267",.8);
+   }
+   for(let lon=0;lon<360;lon+=30) {
+     const meridian=Array.from({length:73},(_,i)=>{let t=(i*2.5-90)*Math.PI/180,v=lon*Math.PI/180;
+       return [Math.cos(t)*Math.cos(v),Math.cos(t)*Math.sin(v),Math.sin(t)];});
+     line3(c,w,h,r,meridian,"#375267",.8);
+   }
+   for(let e=0;e<D.entry.length;e++) if(D.entry[e]<=p+1e-9)
+     track(c,w,h,r,points[D.src[e]],points[D.dst[e]],"#4adacb89",1.6);
+   const loop=currentLoop();
+   if(available(loop)) {
+     for(let i=0;i<loop.vertices.length-1;i++)
+       track(c,w,h,r,points[loop.vertices[i]],points[loop.vertices[i+1]],"#f4b769",3);
+   }
+   D.nodes.forEach((node,i)=>{
+     const [x,y,z]=proj(points[i],w,h,r);
+     if(z<-.02)return;
+     c.fillStyle=node.kind==="component"?"#4adacb":"#a3b6ed";
+     c.beginPath();c.arc(x,y,node.kind==="component"?5:4,0,2*Math.PI);c.fill();
+     c.font="12px ui-monospace,monospace";c.fillStyle="#e2eff9";c.fillText(node.label,x+9,y-8);
+   });
+   if(available(loop)&&progress!=null) {
+     const i=Math.min(loop.steps.length-1,Math.floor(progress)),fraction=cl(progress-i,0,1);
+     const [x,y,z]=proj(slerp(points[loop.vertices[i]],points[loop.vertices[i+1]],fraction),w,h,r);
+     if(z>-.02){c.fillStyle="#ffd98c";c.shadowColor="#ffd98c";c.shadowBlur=15;
+       c.beginPath();c.arc(x,y,7,0,2*Math.PI);c.fill();c.shadowBlur=0;}
+   }
+   const bx=w-72,by=h-71;
+   c.fillStyle="#0b1525dd";c.beginPath();c.arc(bx,by,48,0,2*Math.PI);c.fill();
+   c.strokeStyle="#58758b";c.lineWidth=1;c.stroke();
+   needle(c,bx,by,0,33,"#82aef0",2,[4,4]);
+   needle(c,bx,by,courierAngle(loop,progress),35,"#f4b769",3);
+   c.fillStyle="#c9d6e3";c.font="10px sans-serif";c.textAlign="center";
+   c.fillText("FRAME",bx,by+58);c.textAlign="start";
+ }
+ function chart() {
+   const [c,w,h]=context(graph), pad={l:29,r:30,t:10,b:24}, W=w-pad.l-pad.r,H=h-pad.t-pad.b;
+   c.clearRect(0,0,w,h);c.strokeStyle="#30475b";c.lineWidth=1;
+   for(let t=0;t<=4;t++){const y=pad.t+H*t/4;c.beginPath();c.moveTo(pad.l,y);c.lineTo(w-pad.r,y);c.stroke();}
+   function series(vals,color,max) {
+     c.beginPath();
+     vals.forEach((v,i)=>{const x=pad.l+D.ps[i]*W,y=pad.t+H*(1-v/max);
+       if(i===0)c.moveTo(x,y);else c.lineTo(x,y);});
+     c.strokeStyle=color;c.lineWidth=2;c.stroke();
+   }
+   series(D.largest,"#4adacb",1);
+   series(D.betti1,"#f4b769",Math.max(1,D.betti1[D.betti1.length-1]));
+   const x=pad.l+p*W;
+   c.beginPath();c.moveTo(x,pad.t);c.lineTo(x,pad.t+H);c.strokeStyle="#82aef0";c.setLineDash([4,4]);c.stroke();c.setLineDash([]);
+   c.font="11px ui-monospace,monospace";c.fillStyle="#a2b7c6";c.fillText("0",pad.l,pad.t+H+15);
+   c.fillText("1",pad.l+W-5,pad.t+H+15);c.fillText("p",pad.l+W+10,pad.t+H+15);
+ }
+ function updateStats() {
+   const index=Math.max(0,Math.min(D.ps.length-1,D.ps.findIndex(x=>x>=p-1e-9)));
+   $("occupation-value").textContent=p.toFixed(2);
+   $("largest").textContent=(D.largest[index]*100).toFixed(1)+"%";
+   $("betti").textContent=D.betti1[index];
+   $("edges").textContent=D.kept_edges[index]+" / "+D.n_edges;
+   $("onset").textContent=D.p_h_known ? fmt(D.p_h) : "unknown";
+   const loop=currentLoop(), active=available(loop);
+   $("play").disabled=!active || D.rank!==2 || loop.determinant<=0 || loop.signed_angle_degrees==null;
+   $("birth").textContent=active?fmt(loop.birth):"—";
+   $("angle").textContent=active&&loop.angle_degrees!=null?loop.angle_degrees.toFixed(1)+"°":"—";
+   $("deviation").textContent=active?fmt(loop.frobenius_distance):"—";
+   $("det").textContent=active?fmt(loop.determinant):"—";
+   $("loop-desc").textContent=active ?
+     `Cycle ${selected+1} entered at p=${loop.birth.toFixed(2)}. ${loop.steps.length} signed transports; ${loop.nontrivial?"nontrivial":"flat"} at ε=${D.epsilon}.` :
+     "Increase p to the selected cycle's birth threshold to enable transport.";
+ }
+ function setP(x) {
+   p=cl(Number(x),0,1);
+   if(!available(currentLoop())) {courierPlaying=false;progress=null;}
+   updateStats();drawSphere();chart();
+ }
+ D.loops.forEach((loop,i)=>{
+   const option=document.createElement("option");option.value=i;
+   option.textContent=`Loop ${i+1} · p=${loop.birth.toFixed(2)} · ${loop.angle_degrees==null?"O(r)":loop.angle_degrees.toFixed(1)+"°"}`;
+   select.append(option);
+ });
+ if(D.rank!==2) { $("play").disabled=true; $("courier-readout").textContent="Compass animation currently supports SO(2). Spectral diagnostics remain available."; }
+ select.addEventListener("change",()=>{ selected=Number(select.value);progress=null;courierPlaying=false;updateStats();drawSphere(); });
+ slider.addEventListener("input",()=>setP(slider.value));
+ $("play").addEventListener("click",()=>{
+   if(!available(currentLoop())||D.rank!==2||currentLoop().signed_angle_degrees==null)return;
+   progress=0;courierPlaying=true;last=performance.now();
+   $("courier-readout").textContent="Courier in motion: the needle follows the cumulative edge transports. The dashed needle is the original frame.";
+ });
+ $("reset").addEventListener("click",()=>{yaw=-.10;pitch=.08;drawSphere();});
+ sphere.addEventListener("pointerdown",e=>{dragging=[e.clientX,e.clientY];sphere.setPointerCapture(e.pointerId);});
+ sphere.addEventListener("pointermove",e=>{if(!dragging)return;yaw+=(e.clientX-dragging[0])*.008;
+   pitch=cl(pitch+(e.clientY-dragging[1])*.008,-Math.PI/2,Math.PI/2);dragging=[e.clientX,e.clientY];drawSphere();});
+ sphere.addEventListener("pointerup",()=>dragging=null);
+ sphere.addEventListener("pointercancel",()=>dragging=null);
+ window.addEventListener("resize",()=>{drawSphere();chart();});
+ function tick(t) {
+   if(courierPlaying){ const dt=Math.min(0.1,(t-last)/1000);last=t;
+     progress=Math.min(currentLoop().steps.length,progress+dt*1.05);
+     if(progress>=currentLoop().steps.length) {courierPlaying=false;
+       $("courier-readout").textContent=`Returned to origin. Frame angle ${currentLoop().signed_angle_degrees.toFixed(1)}° relative to starting gauge; magnitude ${currentLoop().angle_degrees.toFixed(1)}°.`;}
+     drawSphere(); }
+   requestAnimationFrame(tick);
+ }
+ setP(slider.value);requestAnimationFrame(tick);
+})();
+</script>
+</body></html>
