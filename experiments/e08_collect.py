@@ -21,9 +21,22 @@ from percinterp.e08_io import atomic_json, digest, read_json
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def load_cached_tokenizer():
+    """Resolve a concrete local snapshot to avoid model-ID metadata queries."""
+    from huggingface_hub import try_to_load_from_cache
+    from transformers import AutoTokenizer
+    cached = try_to_load_from_cache('Qwen/Qwen3-0.6B', 'tokenizer_config.json')
+    if not isinstance(cached, str):
+        raise FileNotFoundError('Qwen3-0.6B tokenizer is not cached; no download allowed')
+    snapshot = Path(cached).parent
+    if not (snapshot / 'tokenizer.json').is_file() or not (snapshot / 'config.json').is_file():
+        raise FileNotFoundError('incomplete local tokenizer snapshot; no download allowed')
+    return AutoTokenizer.from_pretrained(str(snapshot), local_files_only=True, fix_mistral_regex=False)
+
+
 def load_inputs(seed):
     from e04_common import heldout_tokens, find_run, load_component_model
-    from transformers import AutoTokenizer
+    tokenizer = load_cached_tokenizer()
     rows = heldout_tokens()
     discovery, evaluation = split_row_ids(len(rows), torch.randperm(len(rows),
         generator=torch.Generator().manual_seed(0)).numpy())
@@ -37,7 +50,6 @@ def load_inputs(seed):
     cm, info = load_component_model(run, 'cuda')
     if info.config.sampling != 'continuous':
         raise RuntimeError('e08 requires deterministic continuous CI, not a stochastic mask realization')
-    tokenizer = AutoTokenizer.from_pretrained('Qwen/Qwen3-0.6B', local_files_only=True)
     return rows, discovery, evaluation, cm, info, tokenizer, evidence
 
 

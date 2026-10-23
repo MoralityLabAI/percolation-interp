@@ -1,0 +1,45 @@
+{
+ "reviewer": "Codex implementation review",
+ "reviewed_at_singapore": "2026-10-23T23:10:20.780611",
+ "scientific_settings_unchanged": true,
+ "reason": "The installed tokenizer invoked model_info for a model-ID string despite local_files_only. Offline mode blocked it before any context row was collected. Resolve the identical cached Qwen tokenizer snapshot directory explicitly and preflight it before model loading.",
+ "verification": "89 tests pass; actual param-decomp runtime tokenizer round-trip passed with requests.Session.request and huggingface_hub.model_info forbidden. No rows, labels or effects had been collected. The completed 12-map weighted stage and its code are unchanged.",
+ "previous_manifest": {
+  "design_sha256": "0129324d42d44224c26ee97ac3305ab7cf51fcd783eec015da6f3f6f7c296824",
+  "code_sha256": {
+   "src\\percinterp\\e08_contextual.py": "e452ad059012a120b63a2559ae04e0c5f38009adfc57a2c96d6266c2beb39902",
+   "src\\percinterp\\e08_hooks.py": "8510bf82a37ee94f09e4aec33a9e5ff6b91336e0affeadec101d2bf01db2074f",
+   "src\\percinterp\\e08_io.py": "80997d3434c75c8c2f51fffa082f7b50eefe1f1089450c9a4f60420955559ef4",
+   "experiments\\e08_collect.py": "25cef0f616979f55acfc8428aa1b5c953ae18fd3bc17a7e32f13a375ed94e5c3",
+   "experiments\\e08_effects.py": "c07e14a3679abcbe27a8f548409b13b12e20d3ac400771bc8e06e657d3f557ab",
+   "experiments\\e08_pipeline.py": "df952001052d13888393fd7c7a94dbe316c578f08dceaea4892470d1e0e83892",
+   "experiments\\e08_prepare.py": "fca61f30aa61c61d5e8b6d6f122ee0178e50c0abe11d654b5e9fd91aa1114050",
+   "experiments\\e08_report.py": "dc62f6dae646e54f71f1ff21fc62e0ff0075c0abe054ec67566843ca4e91e0e2",
+   "experiments\\e08_score.py": "9a5416998fd2e780e5dcdf5eedbb1217eef603c2e6658a1a7c455eec288d7c8d",
+   "experiments\\e08_weighted.py": "c61de6a99de4ff0d5e3ca93449d4a90eaf29c239b73354618feecee24da621e9"
+  }
+ },
+ "new_manifest": {
+  "design_sha256": "0129324d42d44224c26ee97ac3305ab7cf51fcd783eec015da6f3f6f7c296824",
+  "code_sha256": {
+   "src\\percinterp\\e08_contextual.py": "e452ad059012a120b63a2559ae04e0c5f38009adfc57a2c96d6266c2beb39902",
+   "src\\percinterp\\e08_hooks.py": "8510bf82a37ee94f09e4aec33a9e5ff6b91336e0affeadec101d2bf01db2074f",
+   "src\\percinterp\\e08_io.py": "ee2488d658f49803ba1dfd9bbf43d5fcda6aaae5666c3c605165b9c7e78b8c9a",
+   "experiments\\e08_collect.py": "ad5a04a4d84d3f61317106a6d8260fd9bca3f168ece95e5e0f85971e36388063",
+   "experiments\\e08_effects.py": "c07e14a3679abcbe27a8f548409b13b12e20d3ac400771bc8e06e657d3f557ab",
+   "experiments\\e08_pipeline.py": "f4b9a01d20090d2182701474471727a9e02512f9dbc4394d162d45ab7cb21968",
+   "experiments\\e08_prepare.py": "fca61f30aa61c61d5e8b6d6f122ee0178e50c0abe11d654b5e9fd91aa1114050",
+   "experiments\\e08_report.py": "dc62f6dae646e54f71f1ff21fc62e0ff0075c0abe054ec67566843ca4e91e0e2",
+   "experiments\\e08_score.py": "9a5416998fd2e780e5dcdf5eedbb1217eef603c2e6658a1a7c455eec288d7c8d",
+   "experiments\\e08_weighted.py": "c61de6a99de4ff0d5e3ca93449d4a90eaf29c239b73354618feecee24da621e9"
+  }
+ },
+ "changed_files": [
+  "experiments\\e08_collect.py",
+  "experiments\\e08_pipeline.py",
+  "src\\percinterp\\e08_io.py"
+ ],
+ "preserved_geometry_sha256": "c99529caf73a17a78b82801a995ffcf8144c30870f171721a5654c2d1d40f4b2",
+ "original_failure_log": "out/e08/collect-seed0.log",
+ "protocol_handling": "Explicit --reviewed-repair receipt required; old manifest is archived, not silently replaced."
+}

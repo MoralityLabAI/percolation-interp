@@ -14,7 +14,7 @@ import subprocess
 import sys
 import time
 from percinterp.e08_io import (atomic_json, driver_lock, prerequisite_files,
-                              read_json, digest, DriverAlreadyRunning)
+                              read_json, digest, DriverAlreadyRunning, accept_reviewed_repair)
 
 ROOT = Path(__file__).resolve().parents[1]
 VRAM = Path.home() / 'AppData/Local/Programs/vramorama/vramorama.exe'
@@ -52,7 +52,7 @@ def stage(name, vram, python, script, *args, seed=None):
         subprocess.run(command, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT, check=True)
 
 
-def run(wait):
+def run(wait, reviewed_repair=None):
     with driver_lock(ROOT / 'out/e08/driver.lock'):
         last_log = 0.
         while True:
@@ -82,7 +82,9 @@ def run(wait):
                     for directory in ('src/percinterp', 'experiments')
                     for p in sorted((ROOT / directory).glob('e08_*.py'))}}
         if frozen_path.exists() and read_json(frozen_path) != frozen:
-            raise RuntimeError('e08 protocol/code changed after execution began; review before resuming')
+            if reviewed_repair is None:
+                raise RuntimeError('e08 protocol/code changed after execution began; review before resuming')
+            accept_reviewed_repair(frozen_path, frozen, reviewed_repair)
         atomic_json(frozen_path, frozen)
         atomic_json(ROOT / 'out/e08/status.json', {'state': 'running',
             'design_sha256': digest(ROOT / 'docs/e08_design.md')})
@@ -114,8 +116,10 @@ def run(wait):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--wait-for-e05b-e06', action='store_true')
+    parser.add_argument('--reviewed-repair', type=Path)
+    args = parser.parse_args()
     try:
-        run(parser.parse_args().wait_for_e05b_e06)
+        run(args.wait_for_e05b_e06, args.reviewed_repair)
     except DriverAlreadyRunning:
         raise
     except Exception as error:

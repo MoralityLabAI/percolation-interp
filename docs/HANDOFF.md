@@ -1,4 +1,4 @@
-# Handoff, 2026-10-23 19:04 Singapore
+# Handoff, 2026-10-23 23:10 Singapore
 
 Snapshot of everything in flight for the next session, human or agent. The repo
 is `MoralityLabAI/percolation-interp` (GitHub, branch `master`); the local checkout
@@ -8,7 +8,31 @@ Read `docs/e05_design.md`, `docs/e05b_design.md` and `docs/e06_design.md` before
 touching anything below. All three are pre-registered. Never change a criterion
 after seeing results; log deviations in the design doc.
 
-## Current state: e05b/e06 complete; e08 ready for release
+## Current e08 state, 2026-10-23 late check
+
+The weighted all-energy stage completed all 12 maps (32 draws each) in
+about 296 s. Raw files are in results/e08/weighted.json and weighted/;
+retain and reuse them. The following context stage exited before any row
+was saved because the tokenizer library attempted a model-ID metadata
+lookup that offline mode blocked. The e08 driver and worker were confirmed
+absent before repair/resubmission; do not wait on old handles ae19d485.
+
+The collector now loads the identical cached snapshot by local path, with
+HTTP still forbidden. Full suite: 89 tests pass; actual tokenizer preflight
+also passes with HTTP/model_info calls forbidden. Design/sampling settings
+are unchanged. See docs/e08_implementation_notes.md and the exact receipt
+results/e08/implementation_repair_20261023_offline_tokenizer.json.
+Resume the same driver with --reviewed-repair pointing at that receipt;
+the original frozen manifest is preserved and exact before/after hashes
+are checked. Do not bypass or silently overwrite a manifest mismatch.
+
+Another active phb-h1-qwen3-4b job owns most GPU memory and its power cap
+was 15 W; leave it untouched and respect guards. E08 can queue. Continue
+four-hour agent checks, and require blinded review before any effects.
+E05b/e06 results remain final and committed (3158641, release c9295b0).
+The paid pod is deleted; no rentals, downloads, retraining or pushes.
+
+## Prior state: e05b/e06 complete; e08 ready for release
 
 Final local review on 2026-10-23 confirms both e05b gates and Q1-Q4 pass.
 The fixed transfer rule is met. Backbones have 129/115 components and retain

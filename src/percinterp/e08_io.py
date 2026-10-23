@@ -86,3 +86,31 @@ def driver_lock(path):
                 msvcrt.locking(f.fileno(), msvcrt.LK_UNLCK, 1)
             else:
                 fcntl.flock(f, fcntl.LOCK_UN)
+
+
+def accept_reviewed_repair(path, current, receipt_path):
+    """Explicit, recorded implementation-only migration; reject all others.
+
+    The receipt binds exact before/after manifests. The original protocol
+    snapshot remains saved; the scientific design hash cannot change.
+    """
+    path = Path(path)
+    previous = read_json(path)
+    receipt = read_json(receipt_path)
+    if (receipt.get('previous_manifest') != previous or receipt.get('new_manifest') != current
+            or previous['design_sha256'] != current['design_sha256']
+            or not receipt.get('reason') or not receipt.get('verification')
+            or receipt.get('reviewer') != 'Codex implementation review'
+            or receipt.get('scientific_settings_unchanged') is not True):
+        raise RuntimeError('implementation repair receipt does not match exact unchanged-design transition')
+    changed = sorted(k for k in set(previous['code_sha256']) | set(current['code_sha256'])
+                     if previous['code_sha256'].get(k) != current['code_sha256'].get(k))
+    if changed != sorted(receipt.get('changed_files', [])) or not changed:
+        raise RuntimeError('implementation repair changed-file list mismatch')
+    history = path.parent / 'protocol_history' / (digest(path) + '.json')
+    if not history.exists():
+        atomic_json(history, previous)
+    atomic_json(path.parent / 'last_reviewed_repair.json',
+                {'receipt_path': str(Path(receipt_path).resolve()), 'receipt_sha256': digest(receipt_path),
+                 'previous_snapshot': str(history), 'changed_files': changed})
+    atomic_json(path, current)
