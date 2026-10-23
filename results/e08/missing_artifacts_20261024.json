@@ -1,0 +1,42 @@
+{
+  "checked_at_utc": "2026-10-23T19:07:06.118196+00:00",
+  "state": "blocked_missing_saved_artifacts",
+  "artifact_root": "C:\\Users\\patri\\param_decomp_out",
+  "artifact_root_exists": false,
+  "missing_final_checkpoints": [
+    "C:\\Users\\patri\\param_decomp_out\\decompositions\\p-7e116244\\model_20000.pth",
+    "C:\\Users\\patri\\param_decomp_out\\decompositions\\p-06edd191\\model_20000.pth"
+  ],
+  "failure_log": "out/e08/collect-seed0.log",
+  "failure": "FileNotFoundError before any context row was saved",
+  "live_state_verified": {
+    "vramorama_leases": [],
+    "e08_python_processes": []
+  },
+  "searches": [
+    "rg --files --hidden --no-ignore for both run IDs and model_20000 across C:\\Users\\patri: no matching checkpoint",
+    "Same filename search in C:\\Temp, C:\\ProgramData, C:\\Users\\Public: no matching checkpoint",
+    "Recycle Bin original-path metadata searched for param-decomp and both run IDs: no match",
+    "Win32_LogicalDisk reports only mounted local C: volume"
+  ],
+  "limits": "Searches establish absence at expected paths and no match in searched storage; they do not prove deletion or rule out renamed archives, disconnected storage, remote backups, or inaccessible locations.",
+  "cause_of_absence": "unknown; no deletion or move attributed to any actor",
+  "weighted_results": {
+    "summary_sha256": "c99529caf73a17a78b82801a995ffcf8144c30870f171721a5654c2d1d40f4b2",
+    "map_files": 12,
+    "reuse_required": true
+  },
+  "design_sha256": "0129324d42d44224c26ee97ac3305ab7cf51fcd783eec015da6f3f6f7c296824",
+  "reviewed_tokenizer_repair_applied": {
+    "receipt_path": "C:\\Users\\patri\\Documents\\GitHub\\MoralityLabAI\\percolation-interp\\results\\e08\\implementation_repair_20261023_offline_tokenizer.json",
+    "receipt_sha256": "0540b93606c56eaa0f1b28239bd037eb0796da1048c912db99986a1124611024",
+    "previous_snapshot": "C:\\Users\\patri\\Documents\\GitHub\\MoralityLabAI\\percolation-interp\\out\\e08\\protocol_history\\7a7488ff7b0e993c9c0ba7740f1e93b7a6e3c6de4094245f9381daf3c243bdcb.json",
+    "changed_files": [
+      "experiments\\e08_collect.py",
+      "experiments\\e08_pipeline.py",
+      "src\\percinterp\\e08_io.py"
+    ]
+  },
+  "action": "Requested human location of relocated or backed-up saved runs; do not train, rent, download, or relaunch until verified copies are available.",
+  "prior_billing": "Pod deletion and original verified retrieval remain documented in results/e05b_retrieval.json; no cloud call made during this check."
+}

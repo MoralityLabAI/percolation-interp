@@ -1,4 +1,30 @@
-# Handoff, 2026-10-23 23:10 Singapore
+# Handoff, 2026-10-24 03:10 Singapore
+
+## Current blocker, 2026-10-24 03:10 Singapore
+
+E08's reviewed tokenizer repair was accepted and its queued request admitted
+around 23:29 October 23. The collector then failed before saving a context
+row: the saved seed-0 final checkpoint path did not exist. At this check the
+entire C:\Users\patri\param_decomp_out directory is absent, including both
+expected run directories. No VRAMorama lease or e08 Python worker remains.
+Do not resubmit a driver until the saved artifacts are found and verified.
+
+Read-only filename searches across the user profile and local shared storage
+found neither final checkpoint or run ID; Recycle Bin original-path metadata
+had no match. Only C: is mounted. This does not prove deletion or rule out a
+renamed archive, disconnected drive or backup. The cause is unknown. A human
+question requests the relocated/backup location. No new training, rentals,
+downloads or cloud calls were made. Evidence and search limits are recorded
+in results/e08/missing_artifacts_20261024.json.
+
+The completed e05b/e06 records and all 12 e08 weighted-map results are still
+present. Reuse them. The paid pod's earlier deletion remains confirmed; the
+new issue is local artifact availability. Keep four-hour checks sparse and
+avoid repeated notifications or broad rescans while awaiting the location.
+If a copy becomes available, verify both final sizes and SHA256s against
+results/e05b_retrieval.json before resuming through VRAMorama. Preserve the
+frozen design and applied implementation manifest. No semantic e08 outcome
+has been measured, and the task is not complete.
 
 Snapshot of everything in flight for the next session, human or agent. The repo
 is `MoralityLabAI/percolation-interp` (GitHub, branch `master`); the local checkout
