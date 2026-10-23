@@ -1,0 +1,22 @@
+{
+ "0": {
+  "run_id": "p-7e116244",
+  "archive_bytes": 1323117113,
+  "archive_sha256": "8b56ca193edbd8211c43e8311bf85ecdab06d19cc38910e85d4f6b2a2c79a8b4",
+  "zip_crc_verified": true,
+  "tokens": 102400,
+  "batch": 16,
+  "n_batches": 50,
+  "path": "C:\\Users\\patri\\Documents\\GitHub\\MoralityLabAI\\percolation-interp\\out\\e05b_seed0\\dataset_attributions.pt"
+ },
+ "1": {
+  "run_id": "p-06edd191",
+  "archive_bytes": 1323118257,
+  "archive_sha256": "4333072d2329e0df83b460d55b4d3eb7df5dd6bc91dffb5ba1665aa8b6213820",
+  "zip_crc_verified": true,
+  "tokens": 102400,
+  "batch": 16,
+  "n_batches": 50,
+  "path": "C:\\Users\\patri\\Documents\\GitHub\\MoralityLabAI\\percolation-interp\\out\\e05b_seed1\\dataset_attributions.pt"
+ }
+}

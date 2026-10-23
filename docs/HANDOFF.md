@@ -1,4 +1,4 @@
-# Handoff, 2026-10-23 11:14 Singapore
+# Handoff, 2026-10-23 19:04 Singapore
 
 Snapshot of everything in flight for the next session, human or agent. The repo
 is `MoralityLabAI/percolation-interp` (GitHub, branch `master`); the local checkout
@@ -7,6 +7,35 @@ is `C:\Users\patri\Documents\GitHub\MoralityLabAI\percolation-interp`.
 Read `docs/e05_design.md`, `docs/e05b_design.md` and `docs/e06_design.md` before
 touching anything below. All three are pre-registered. Never change a criterion
 after seeing results; log deviations in the design doc.
+
+## Current state: e05b/e06 complete; e08 ready for release
+
+Final local review on 2026-10-23 confirms both e05b gates and Q1-Q4 pass.
+The fixed transfer rule is met. Backbones have 129/115 components and retain
+61.61%/63.20% of the decomposition's token-dependent KL gap. Full report:
+docs/e05b_results.md; gate/sieve/causal raw records are in results/e05b.
+Both final attribution archives passed full ZIP CRC validation and have
+SHA256/size manifests there. Seed-1 recovery completed successfully.
+
+All four e06 graphs are complete. P1-P3 hold across applicable graphs; P4
+has no failing testable cell (Qwen seed0 is untestable); P5 fails because
+Qwen seed0 retains .531335 of raw correlation after rate control, versus
+.487233 for seed1. The reported-only N-AB control gives p about .48 on
+both Qwen graphs. Report: docs/e06_results.md; full scores and raw records
+are in results/e06. Do not describe these selected sets as proven wiring
+circuits or interpret the P5 threshold failure as a semantic mechanism.
+
+The local resume supervisor has exited successfully. The only current
+workflow lease is e08-driver ae19d485, launcher14144/job31640; it is waiting
+for the reviewed-results commit marker. After committing this reviewed
+report/results, write results/e08/prerequisites_reviewed.json naming the
+verified local e06_commit. Preserve the live waiting driver; do not duplicate
+or restart it. It will launch its own stages when its checks pass.
+No e08 artifact outcome has been claimed yet. Continue four-hour checks,
+respect guards, keep all saved VPD files and never push/rent/retrain.
+
+The snapshots below are historical; this current-state section supersedes
+their pending-stage descriptions. The e07/PAMA work remains complete.
 
 ## Recovery check, 2026-10-23 11:08 Singapore
 
@@ -207,8 +236,8 @@ criteria. Never push or rent; leave unrelated files untouched.
 | e03 | Toy model, VPD + SAE sieve | done, three seeds: VPD sieve + causal pass, SAE fails |
 | e04 | Transfer to Qwen3-0.6B, layers 2-3 | done, two seeds: **not transfer**, Q1 fails. Addendum: about 94% of the zero-ablation gap is the position-0 massive activation, and the causal effect is one attention-sink pair |
 | e05 | Same question, position-aware mean-ablation baselines, layers 0-1 | local seed 0 failed the gate at 20k (KL 2.84 vs 1.94, plateau); seed 1 cancelled |
-| e05b | e05 with an 8× batch (32 × 128) on a rented A6000 | both trained and copied; pod deleted; seed 0 gate/Q1 pass, causal running; seed 1 pending |
-| e06 | Null models for the sieve's z-curve: coverage vs alignment | pre-registered; e03 seeds 1-2 confirmatory: P1, P2, P4, P5 pass. Waiting on e05b graphs |
+| e05b | e05 with an 8× batch (32 × 128) on a rented A6000 | complete: both gates and Q1-Q4 pass; transfer rule met; pod deleted |
+| e06 | Null models for the sieve's z-curve: coverage vs alignment | complete: P1-P3 hold; P4 has no failing testable cell; P5 fails on Qwen seed 0 |
 | e07 | Bipartite percolation of VPD component/neuron sharing | done, both saved seeds: contact degree concentration explains most early structural mixing; semantic labels not measured |
 
 **Discovery findings behind e06** (`docs/e06_exploratory.md`): the small-c excess is

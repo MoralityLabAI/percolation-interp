@@ -1,0 +1,70 @@
+e03_seed1 [e03]
+  P1 pass: db +0.0520, alignment +0.0350, coverage +0.0170 (share 0.674)
+  P2 pass: real 0.0610 vs N-DC 0.0065 +- 0.0027, z 20.4, p 0.0010; grid max-stat z 31.0, p 0.0010
+  P3 pass (reported only): z -98.2, db -0.2824 = coverage -0.2824 + alignment +0.0000; drF +0.0003, drB -0.2827
+  P4 pass: c_s: testable, real 0.0610 vs 0.0590 +- 0.0012, p 0.0789, S 0.9956; c_1: not testable, real 0.4460 vs 0.4460 +- 0.0000, p 1.0000, S 1.0000
+  P5 pass: rho +0.636 (p 0.0010), given rate -0.019 (ratio -0.03)
+e03_seed2 [e03]
+  P1 pass: db +0.0580, alignment +0.0382, coverage +0.0198 (share 0.658)
+  P2 pass: real 0.0670 vs N-DC 0.0066 +- 0.0028, z 21.3, p 0.0010; grid max-stat z 30.7, p 0.0010
+  P3 pass (reported only): z -98.5, db -0.2837 = coverage -0.2837 + alignment +0.0000; drF +0.0025, drB -0.2862
+  P4 pass: c_s: testable, real 0.0670 vs 0.0651 +- 0.0011, p 0.0729, S 0.9981; c_1: not testable, real 0.4368 vs 0.4368 +- 0.0000, p 1.0000, S 1.0000
+  P5 pass: rho +0.634 (p 0.0010), given rate +0.003 (ratio 0.004)
+e05b_seed0 [e05b]
+  P1 pass: db +0.0166, alignment +0.0169, coverage -0.0003 (share 1.019)
+  P2 pass: real 0.0235 vs N-DC 0.0032 +- 0.0010, z 20.6, p 0.0010; grid max-stat z 25.2, p 0.0010
+  P3 pass: z -228.3, db -0.4210 = coverage -0.4210 + alignment +0.0000; drF -0.0024, drB -0.4186
+  P4 not testable: c_s: not testable, real 0.0235 vs 0.0235 +- 0.0000, p 1.0000, S 1.0000; c_1: not testable, real 0.3859 vs 0.3859 +- 0.0000, p 1.0000, S 1.0000
+  P5 fail: rho +0.249 (p 0.0010), given rate +0.132 (ratio 0.531)
+e05b_seed1 [e05b]
+  P1 pass: db +0.0153, alignment +0.0145, coverage +0.0008 (share 0.948)
+  P2 pass: real 0.0214 vs N-DC 0.0029 +- 0.0009, z 20.8, p 0.0010; grid max-stat z 27.3, p 0.0010
+  P3 pass: z -277.3, db -0.4482 = coverage -0.4482 + alignment +0.0000; drF -0.0106, drB -0.4376
+  P4 pass: c_s: testable, real 0.0214 vs 0.0214 +- 0.0001, p 0.9031, S 1.0000; c_1: testable, real 0.3647 vs 0.3647 +- 0.0000, p 0.9960, S 1.0000
+  P5 pass: rho +0.227 (p 0.0010), given rate +0.111 (ratio 0.487)
+
+{
+ "P1": {
+  "holds": true,
+  "graphs": {
+   "e03_seed1": "pass",
+   "e03_seed2": "pass",
+   "e05b_seed0": "pass",
+   "e05b_seed1": "pass"
+  }
+ },
+ "P2": {
+  "holds": true,
+  "graphs": {
+   "e03_seed1": "pass",
+   "e03_seed2": "pass",
+   "e05b_seed0": "pass",
+   "e05b_seed1": "pass"
+  }
+ },
+ "P3": {
+  "holds": true,
+  "graphs": {
+   "e05b_seed0": "pass",
+   "e05b_seed1": "pass"
+  }
+ },
+ "P4": {
+  "holds": true,
+  "graphs": {
+   "e03_seed1": "pass",
+   "e03_seed2": "pass",
+   "e05b_seed0": "not testable",
+   "e05b_seed1": "pass"
+  }
+ },
+ "P5": {
+  "holds": false,
+  "graphs": {
+   "e03_seed1": "pass",
+   "e03_seed2": "pass",
+   "e05b_seed0": "fail",
+   "e05b_seed1": "pass"
+  }
+ }
+}

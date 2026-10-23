@@ -1,0 +1,404 @@
+{
+ "per_graph": {
+  "e03_seed1": {
+   "P1": {
+    "status": "pass",
+    "delta_b": 0.05200952986022871,
+    "delta_alignment": 0.035048059733614315,
+    "delta_coverage": 0.016961470126614402,
+    "alignment_share": 0.6738776494962185,
+    "z_wl": 16.383668941463622,
+    "rule": "db > 0, da > 0, da >= 0.5 db",
+    "counts": true
+   },
+   "P2": {
+    "status": "pass",
+    "real": 0.06099110546378653,
+    "null_mean": 0.006504447268106735,
+    "null_sd": 0.00266725305254483,
+    "z": 20.428004813301833,
+    "p": 0.000999000999000999,
+    "secondary_grid_max_stat": {
+     "z_peak": 30.979481075896356,
+     "p": 0.000999000999000999,
+     "null_peaks_max": 4.948515767394517,
+     "c_peak": 0.03185507508089919
+    },
+    "rule": "p <= 0.01",
+    "counts": true
+   },
+   "P3": {
+    "status": "pass",
+    "z": -98.15923951305994,
+    "delta_b": -0.28236531130876774,
+    "delta_coverage": -0.28236531130876774,
+    "delta_alignment": 0.0,
+    "delta_rF": 0.0003443456162639043,
+    "delta_rB": -0.2827096569250316,
+    "z_out_strength": -2.113852261361322,
+    "z_in_strength": -117.16039970309953,
+    "rule": "z <= -3, dcov <= db, da >= -0.1 |db|",
+    "counts": false
+   },
+   "P4": {
+    "status": "pass",
+    "cells": {
+     "c_s": {
+      "testable": true,
+      "wiring_excess": false,
+      "real": 0.060991105463786534,
+      "null_mean": 0.059008259212198225,
+      "null_sd": 0.0012277312353222668,
+      "z": 1.6150491203132358,
+      "p_high": 0.07892107892107893,
+      "S": 0.9955527318932655,
+      "n_edges": 3306
+     },
+     "c_1": {
+      "testable": false,
+      "wiring_excess": false,
+      "real": 0.44599745870393903,
+      "null_mean": 0.4459974587039391,
+      "null_sd": 5.551115123125783e-17,
+      "z": null,
+      "p_high": 1.0,
+      "S": 1.0,
+      "n_edges": 33113
+     }
+    },
+    "sampler": "parallel",
+    "rule": "no testable cell with p_high <= 0.005; not testable if no cell has spread",
+    "counts": true
+   },
+   "P5": {
+    "status": "pass",
+    "rho": 0.6363971527004337,
+    "p": 0.000999000999000999,
+    "rho_given_rate": -0.019110779092840192,
+    "ratio": -0.030029642671635364,
+    "rule": "rho > 0 with p <= 0.01, rho_given_rate < 0.5 rho",
+    "counts": true
+   }
+  },
+  "e03_seed2": {
+   "P1": {
+    "status": "pass",
+    "delta_b": 0.057996839443742086,
+    "delta_alignment": 0.03816015142346267,
+    "delta_coverage": 0.01983668802027943,
+    "alignment_share": 0.6579694995358956,
+    "z_wl": 17.794104909846965,
+    "rule": "db > 0, da > 0, da >= 0.5 db",
+    "counts": true
+   },
+   "P2": {
+    "status": "pass",
+    "real": 0.06700379266750947,
+    "null_mean": 0.006563843236409609,
+    "null_sd": 0.0028345481176302594,
+    "z": 21.322604846669144,
+    "p": 0.000999000999000999,
+    "secondary_grid_max_stat": {
+     "z_peak": 30.685186077100226,
+     "p": 0.000999000999000999,
+     "null_peaks_max": 7.271885278693797,
+     "c_peak": 0.03233157844415225
+    },
+    "rule": "p <= 0.01",
+    "counts": true
+   },
+   "P3": {
+    "status": "pass",
+    "z": -98.49694129519129,
+    "delta_b": -0.2837111251580314,
+    "delta_coverage": -0.2837111251580314,
+    "delta_alignment": 0.0,
+    "delta_rF": 0.0025328697850816187,
+    "delta_rB": -0.2862439949431129,
+    "z_out_strength": -0.1256010848022777,
+    "z_in_strength": -123.45644322137854,
+    "rule": "z <= -3, dcov <= db, da >= -0.1 |db|",
+    "counts": false
+   },
+   "P4": {
+    "status": "pass",
+    "cells": {
+     "c_s": {
+      "testable": true,
+      "wiring_excess": false,
+      "real": 0.06700379266750948,
+      "null_mean": 0.06509734513274336,
+      "null_sd": 0.0011454553551924597,
+      "z": 1.664357782364904,
+      "p_high": 0.07292707292707293,
+      "S": 0.9981036662452591,
+      "n_edges": 3312
+     },
+     "c_1": {
+      "testable": false,
+      "wiring_excess": false,
+      "real": 0.4367888748419722,
+      "null_mean": 0.43678887484197226,
+      "null_sd": 5.551115123125783e-17,
+      "z": null,
+      "p_high": 1.0,
+      "S": 1.0,
+      "n_edges": 33189
+     }
+    },
+    "sampler": "parallel",
+    "rule": "no testable cell with p_high <= 0.005; not testable if no cell has spread",
+    "counts": true
+   },
+   "P5": {
+    "status": "pass",
+    "rho": 0.6343897925613826,
+    "p": 0.000999000999000999,
+    "rho_given_rate": 0.002539127759875001,
+    "ratio": 0.004002472595946315,
+    "rule": "rho > 0 with p <= 0.01, rho_given_rate < 0.5 rho",
+    "counts": true
+   }
+  },
+  "e05b_seed0": {
+   "P1": {
+    "status": "pass",
+    "delta_b": 0.016610286503279323,
+    "delta_alignment": 0.0169223258731913,
+    "delta_coverage": -0.00031203936991204355,
+    "alignment_share": 1.0187859113598294,
+    "z_wl": 10.168204396362142,
+    "rule": "db > 0, da > 0, da >= 0.5 db",
+    "counts": true
+   },
+   "P2": {
+    "status": "pass",
+    "real": 0.02347255781843286,
+    "null_mean": 0.0031518812564722124,
+    "null_sd": 0.0009848257881127044,
+    "z": 20.633777879540183,
+    "p": 0.000999000999000999,
+    "secondary_grid_max_stat": {
+     "z_peak": 25.176000000000002,
+     "p": 0.000999000999000999,
+     "null_peaks_max": 6.287115706021032,
+     "c_peak": 0.0311732453363595
+    },
+    "rule": "p <= 0.01",
+    "counts": true
+   },
+   "P3": {
+    "status": "pass",
+    "z": -228.28993005603476,
+    "delta_b": -0.4209892992751123,
+    "delta_coverage": -0.42098932238682907,
+    "delta_alignment": 2.3111716820334724e-08,
+    "delta_rF": -0.0023648602002071485,
+    "delta_rB": -0.4186244390749051,
+    "z_out_strength": -13.082039790141643,
+    "z_in_strength": -257.9506459138639,
+    "rule": "z <= -3, dcov <= db, da >= -0.1 |db|",
+    "counts": true
+   },
+   "P4": {
+    "status": "not testable",
+    "cells": {
+     "c_s": {
+      "testable": false,
+      "wiring_excess": false,
+      "real": 0.02347255781843286,
+      "null_mean": 0.023472557818432865,
+      "null_sd": 3.469446951953614e-18,
+      "z": null,
+      "p_high": 1.0,
+      "S": 1.0,
+      "n_edges": 1151
+     },
+     "c_1": {
+      "testable": false,
+      "wiring_excess": false,
+      "real": 0.3859164653089403,
+      "null_mean": 0.38591646530894036,
+      "null_sd": 5.551115123125783e-17,
+      "z": null,
+      "p_high": 1.0,
+      "S": 1.0,
+      "n_edges": 11558
+     }
+    },
+    "sampler": "sequential",
+    "rule": "no testable cell with p_high <= 0.005; not testable if no cell has spread",
+    "counts": true
+   },
+   "P5": {
+    "status": "fail",
+    "rho": 0.24905252105553805,
+    "p": 0.000999000999000999,
+    "rho_given_rate": 0.13233037007070445,
+    "ratio": 0.5313351959251805,
+    "rule": "rho > 0 with p <= 0.01, rho_given_rate < 0.5 rho",
+    "counts": true
+   }
+  },
+  "e05b_seed1": {
+   "P1": {
+    "status": "pass",
+    "delta_b": 0.015289976825028959,
+    "delta_alignment": 0.014498019229449172,
+    "delta_coverage": 0.00079195759557979,
+    "alignment_share": 0.9482041336855795,
+    "z_wl": 11.235331817193133,
+    "rule": "db > 0, da > 0, da >= 0.5 db",
+    "counts": true
+   },
+   "P2": {
+    "status": "pass",
+    "real": 0.02143684820393974,
+    "null_mean": 0.002883256083429895,
+    "null_sd": 0.000890748663746676,
+    "z": 20.829211286682753,
+    "p": 0.000999000999000999,
+    "secondary_grid_max_stat": {
+     "z_peak": 27.32258733623902,
+     "p": 0.000999000999000999,
+     "null_peaks_max": 5.644500384027661,
+     "c_peak": 0.05628112384555771
+    },
+    "rule": "p <= 0.01",
+    "counts": true
+   },
+   "P3": {
+    "status": "pass",
+    "z": -277.25619391173103,
+    "delta_b": -0.4481874275782174,
+    "delta_coverage": -0.44818756834728357,
+    "delta_alignment": 1.4076906613681992e-07,
+    "delta_rF": -0.010630938586327332,
+    "delta_rB": -0.4375564889918902,
+    "z_out_strength": -42.370000000000246,
+    "z_in_strength": -283.25684398378286,
+    "rule": "z <= -3, dcov <= db, da >= -0.1 |db|",
+    "counts": true
+   },
+   "P4": {
+    "status": "pass",
+    "cells": {
+     "c_s": {
+      "testable": true,
+      "wiring_excess": false,
+      "real": 0.021436848203939745,
+      "null_mean": 0.02140845886442642,
+      "null_sd": 8.709712502688901e-05,
+      "z": 0.32595036293746105,
+      "p_high": 0.903096903096903,
+      "S": 1.0,
+      "n_edges": 1286
+     },
+     "c_1": {
+      "testable": true,
+      "wiring_excess": false,
+      "real": 0.36471610660486675,
+      "null_mean": 0.36471494785631525,
+      "null_sd": 1.8284743728921327e-05,
+      "z": 0.06337242504891397,
+      "p_high": 0.996003996003996,
+      "S": 1.0,
+      "n_edges": 12887
+     }
+    },
+    "sampler": "sequential",
+    "rule": "no testable cell with p_high <= 0.005; not testable if no cell has spread",
+    "counts": true
+   },
+   "P5": {
+    "status": "pass",
+    "rho": 0.22716360009154396,
+    "p": 0.000999000999000999,
+    "rho_given_rate": 0.11068163726429246,
+    "ratio": 0.4872331536376832,
+    "rule": "rho > 0 with p <= 0.01, rho_given_rate < 0.5 rho",
+    "counts": true
+   }
+  }
+ },
+ "across_graphs": {
+  "P1": {
+   "holds": true,
+   "graphs": {
+    "e03_seed1": "pass",
+    "e03_seed2": "pass",
+    "e05b_seed0": "pass",
+    "e05b_seed1": "pass"
+   }
+  },
+  "P2": {
+   "holds": true,
+   "graphs": {
+    "e03_seed1": "pass",
+    "e03_seed2": "pass",
+    "e05b_seed0": "pass",
+    "e05b_seed1": "pass"
+   }
+  },
+  "P3": {
+   "holds": true,
+   "graphs": {
+    "e05b_seed0": "pass",
+    "e05b_seed1": "pass"
+   }
+  },
+  "P4": {
+   "holds": true,
+   "graphs": {
+    "e03_seed1": "pass",
+    "e03_seed2": "pass",
+    "e05b_seed0": "not testable",
+    "e05b_seed1": "pass"
+   }
+  },
+  "P5": {
+   "holds": false,
+   "graphs": {
+    "e03_seed1": "pass",
+    "e03_seed2": "pass",
+    "e05b_seed0": "fail",
+    "e05b_seed1": "pass"
+   }
+  }
+ },
+ "metadata": {
+  "e03_seed1": {
+   "kind": "e03",
+   "n_nodes": 5333,
+   "n_edges": 3668384,
+   "n_interior": 1574,
+   "n_draws": 1000,
+   "seconds": 8796.17207622528
+  },
+  "e03_seed2": {
+   "kind": "e03",
+   "n_nodes": 5349,
+   "n_edges": 3683200,
+   "n_interior": 1582,
+   "n_draws": 1000,
+   "seconds": 6965.830732345581
+  },
+  "e05b_seed0": {
+   "kind": "e05b",
+   "n_nodes": 4833,
+   "n_edges": 3667624,
+   "n_interior": 2897,
+   "n_draws": 1000,
+   "seconds": 4143.951083660126
+  },
+  "e05b_seed1": {
+   "kind": "e05b",
+   "n_nodes": 5516,
+   "n_edges": 4756737,
+   "n_interior": 3452,
+   "n_draws": 1000,
+   "seconds": 5560.374305725098
+  }
+ },
+ "nonfinite_z_policy": "null means undefined for zero-spread, untestable cells"
+}
