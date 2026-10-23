@@ -1,0 +1,54 @@
+{
+ "observed_at_singapore": "2026-10-23T11:14:39.073085",
+ "status": "recovery_started_not_complete",
+ "seed0": {
+  "gate": {
+   "run_id": "p-7e116244",
+   "slice": [
+    0,
+    1
+   ],
+   "kl_ci": 1.76307912170887,
+   "kl_pama": 7.773885399103165,
+   "ratio": 0.22679510067285888,
+   "threshold_ratio": 0.25,
+   "pass": true,
+   "tokens": 16384
+  },
+  "Q1_pass": true,
+  "Q2_pass": true,
+  "Q3_pass": true,
+  "Q4_pass": true,
+  "share": {
+   "backbone": 0.6160595828181851,
+   "top_ci": 0.5752127065791657,
+   "random_median": 0.22830830370878621,
+   "random_best": 0.3693923403237941,
+   "q4_null_median": 0.008033542098498457,
+   "q4_null_best": 0.097680381526628
+  }
+ },
+ "seed1_gate": {
+  "run_id": "p-06edd191",
+  "slice": [
+   0,
+   1
+  ],
+  "kl_ci": 1.9255121797323227,
+  "kl_pama": 7.773885399103165,
+  "ratio": 0.24768980771886084,
+  "threshold_ratio": 0.25,
+  "pass": true,
+  "tokens": 16384
+ },
+ "failure": {
+  "stage": "attribution serialization",
+  "partial_bytes": 76562432,
+  "analyzer_error": "ZIP central directory absent",
+  "root_cause": "file-write failure; disk exhaustion was not independently recorded",
+  "preserved_partial": "out/e05b_seed1/dataset_attributions.failed_20261023T111334.pt"
+ },
+ "recovery": "Repeat only unfinished local analysis, same batch16 x50 and 1000-shuffle design; atomic validated publication.",
+ "verification": "87 tests passed; no existing workers/leases before recovery launch",
+ "paid_pod": "previously deleted; no contact or new rental"
+}

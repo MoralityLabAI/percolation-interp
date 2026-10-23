@@ -1,4 +1,4 @@
-# Handoff, 2026-10-22 09:53 Singapore
+# Handoff, 2026-10-23 11:14 Singapore
 
 Snapshot of everything in flight for the next session, human or agent. The repo
 is `MoralityLabAI/percolation-interp` (GitHub, branch `master`); the local checkout
@@ -8,7 +8,42 @@ Read `docs/e05_design.md`, `docs/e05b_design.md` and `docs/e06_design.md` before
 touching anything below. All three are pre-registered. Never change a criterion
 after seeing results; log deviations in the design doc.
 
-## Live processes
+## Recovery check, 2026-10-23 11:08 Singapore
+
+This section supersedes the earlier live-process snapshot below. At this
+check no original e05/e06/e08 workers or leases remained. Seed 0 is complete:
+gate and Q1-Q4 all pass. Seed 1 also passed its gate (KL 1.925512 versus
+limit 1.943471), but its attribution serialization failed with a file-write
+error after computing the batches. A 76,562,432-byte truncated file was
+mistaken for a finished stage; the subsequent analyzer and supervisor exited
+because its ZIP central directory was absent. The original cause of the
+write failure is not proven; free disk is now about 16.8 GB.
+
+The partial archive and failure logs were preserved in out/e05b_seed1 with
+failed_20261023T111334 suffixes. Do not use them as scientific results.
+The harvest now checks free space before loading a model, writes to a
+temporary archive, validates every ZIP member CRC, flushes and atomically
+publishes only a complete file. Samples, batch16 x50, seeds and scientific
+criteria are unchanged. Full CPU suite: 87 tests pass, including interrupted
+writes, CRC failure, disk preflight and real Torch serialization.
+
+A new local-only resume helper, work/e05b_resume_analysis.py in the Codex
+chat workspace, was launched through VRAMorama owner e05b-resume (initial
+launcher 22660). It calls only the original helper's --seed entry, skips
+completed seed-0 stages, reruns missing seed-1 attribution/analysis/causal
+stages and finishes e06. It never calls retrieval/API code or the training-
+capable e05 driver. Logs: out/e05b/resume_driver.log and appended
+out/e05b/followthrough.log. Verify its live handles before any resubmission.
+The e08 waiting driver was also restored only after verifying its previous
+lease and worker were absent (new initial launcher 14144). No e08 model
+run has started; its predecessor-review marker remains absent.
+
+An unrelated active llama-server is using host RAM; leave it untouched.
+Admission may queue behind VRAMorama's normal memory guards. Continue sparse
+four-hour checks. Both final paid checkpoints remain local and unchanged;
+no network, rental or training was performed during this recovery.
+
+## Live processes (earlier snapshot)
 
 ### 1. e05b: both remote training runs complete; paid pod deleted
 

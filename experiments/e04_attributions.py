@@ -30,6 +30,11 @@ def main():
     ap.add_argument("--step", type=int, default=None)
     args = ap.parse_args()
 
+    import shutil
+    OUT.mkdir(parents=True, exist_ok=True)
+    if shutil.disk_usage(OUT).free < 2 * 1024 ** 3:
+        raise OSError("attribution harvest requires at least 2 GiB free disk")
+
     from param_decomp.dataset_attributions.harvester import AttributionHarvester
     from param_decomp.topology import TransformerTopology, get_sources_by_target
 
@@ -65,7 +70,8 @@ def main():
         print(f"batch {b + 1}/{args.n_batches}: {time.time() - t0:.0f}s", flush=True)  # the driver's watchdog reads this
     storage = harvester.finalize(0.0)
     OUT.mkdir(parents=True, exist_ok=True)
-    storage.save(OUT / "dataset_attributions.pt")
+    from atomic_output import atomic_zip_save
+    atomic_zip_save(storage.save, OUT / "dataset_attributions.pt")
     print(f"saved; {harvester.n_tokens} tokens", flush=True)
 
 
