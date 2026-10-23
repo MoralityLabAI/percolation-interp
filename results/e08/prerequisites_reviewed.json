@@ -1,0 +1,13 @@
+{
+ "e06_commit": "315864142f5454fb746ddd342ecbb031e536a831",
+ "reviewed_at_utc": "2026-10-23T11:06:03.831730+00:00",
+ "e05b_both_gates_and_Q1_Q4_pass": true,
+ "e06_holds": {
+  "P1": true,
+  "P2": true,
+  "P3": true,
+  "P4": true,
+  "P5": false
+ },
+ "review": "All four held-out records rescored; both attribution ZIP CRCs and hashes checked; scientific counts verified; figures inspected; prior workers exited; report/results committed locally."
+}
