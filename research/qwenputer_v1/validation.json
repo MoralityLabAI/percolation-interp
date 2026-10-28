@@ -1,0 +1,14 @@
+{
+  "errors": 0,
+  "evidence_level": "synthetic_fixture",
+  "failures": 0,
+  "model_run": false,
+  "schema_version": 1,
+  "source_sha256": {
+    "README.md": "7d70bdb884b69e4698ef74d0ddb58455c826d41a2be705733f051e1cb6240544",
+    "recovery.py": "fd649f1623abf01d6bc48642d75ee57b6b30618517cbd5777f4c75dda0024116",
+    "test_recovery.py": "9cea18635d0871e30779771349704ed9631ad0636d25cd301133c7914706b70e",
+    "verify.py": "020848ddcd83c27d8b025c7e1c0c1d412834cf1b2835f581f55bf34cbeed788d"
+  },
+  "tests_run": 9
+}
