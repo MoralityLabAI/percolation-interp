@@ -1,0 +1,38 @@
+name: VPD evidence receipt (offline fixtures)
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/vpd-evidence.yml'
+      - 'src/percinterp/vpd_evidence.py'
+      - 'tests/test_vpd_evidence.py'
+      - 'docs/vpd_evidence_certificate.md'
+  push:
+    branches: [master]
+    paths:
+      - '.github/workflows/vpd-evidence.yml'
+      - 'src/percinterp/vpd_evidence.py'
+      - 'tests/test_vpd_evidence.py'
+      - 'docs/vpd_evidence_certificate.md'
+
+permissions:
+  contents: read
+
+jobs:
+  vpd-synthetic:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.12', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Run isolated VPD receipt fixtures
+        run: |
+          python -m pip install -e . pytest
+          python -m pytest -q tests/test_vpd_evidence.py
+      - name: Check standalone validator syntax
+        run: python -m py_compile src/percinterp/vpd_evidence.py
